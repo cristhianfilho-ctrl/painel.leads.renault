@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Leads - Renault · Grupo Eurovia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --asfalto:#16181a; --chapa:#1f2225; --chapa-alta:#26292d; --risco:#34393e;
+    --amarelo:#ffce00; --texto:#e8e9ea; --apagado:#8b9095;
+    --ok:#4ade80; --alerta:#f87171; --atencao:#fbbf24;
+    --display:"Barlow Condensed","Arial Narrow",sans-serif;
+    --corpo:"Barlow","Helvetica Neue",Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"Courier New",monospace;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{background:var(--asfalto);color:var(--texto);font-family:var(--corpo);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  .envelope{max-width:1360px;margin:0 auto;padding:24px 18px 72px}
+
+  .topo{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;border-bottom:2px solid var(--amarelo);padding-bottom:12px}
+  .topo h1{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:clamp(26px,4.4vw,40px);letter-spacing:.02em;line-height:.95;margin:0}
+  .topo h1 em{font-style:normal;color:var(--amarelo)}
+  .carimbo{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--asfalto);background:var(--amarelo);padding:5px 10px;white-space:nowrap}
+  .carimbo.secundaria{background:var(--chapa-alta);color:var(--apagado);border:1px solid var(--risco)}
+  .carimbo.secundaria b{color:var(--amarelo);font-weight:600}
+
+  .placar{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:1px;background:var(--risco);border:1px solid var(--risco);margin:20px 0 22px}
+  .placar div{background:var(--chapa);padding:12px 14px}
+  .placar span{display:block;font-family:var(--display);text-transform:uppercase;letter-spacing:.14em;font-size:10.5px;color:var(--apagado);margin-bottom:3px}
+  .placar strong{font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:-.02em}
+  .placar strong.destaque{color:var(--amarelo)}
+
+  nav{display:flex;gap:1px;background:var(--risco);border:1px solid var(--risco);margin-bottom:20px;flex-wrap:wrap}
+  nav button{flex:1;min-width:104px;font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:13px;padding:12px 8px;border:0;background:var(--chapa);color:var(--apagado);cursor:pointer}
+  nav button:hover{background:var(--chapa-alta);color:var(--texto)}
+  nav button[aria-selected="true"]{background:var(--amarelo);color:var(--asfalto)}
+  nav button:focus-visible{outline:2px solid var(--amarelo);outline-offset:-4px}
+  nav button .trava{font-size:10px;opacity:.75;letter-spacing:0}
+
+  .painel[hidden]{display:none}
+  .bloco{background:var(--chapa);border:1px solid var(--risco);margin-bottom:20px}
+  .bloco > h2{font-family:var(--display);font-weight:600;text-transform:uppercase;font-size:13px;letter-spacing:.16em;margin:0;padding:11px 14px;border-bottom:1px solid var(--risco);color:var(--apagado);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .miolo{padding:14px}
+  .duplo{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,4fr);gap:18px;align-items:start}
+  @media(max-width:940px){.duplo{grid-template-columns:1fr}}
+
+  input[type=number],input[type=text],input[type=url],select{background:var(--asfalto);color:var(--texto);border:1px solid var(--risco);font-family:var(--mono);font-size:13px;padding:8px 10px;width:100%}
+  input:focus,select:focus{outline:2px solid var(--amarelo);outline-offset:-1px}
+  label.campo{display:block;font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;font-size:10.5px;color:var(--apagado);margin-bottom:4px}
+
+  .barra{display:flex;gap:9px;margin-top:12px;flex-wrap:wrap;align-items:center}
+  button.acao{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:12.5px;padding:9px 15px;border:1px solid var(--risco);cursor:pointer;background:var(--chapa-alta);color:var(--texto)}
+  button.acao:hover{background:var(--risco)}
+  button.acao:focus-visible{outline:2px solid var(--amarelo);outline-offset:2px}
+  button.acao.principal{background:var(--amarelo);color:var(--asfalto);border-color:var(--amarelo)}
+  button.acao.principal:hover{background:#ffdc4d}
+  button.acao.perigo{border-color:#6b2b2b;color:var(--alerta)}
+  button.acao.miudo{padding:6px 11px;font-size:11.5px;letter-spacing:.08em}
+  .controles{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .controles label{font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;font-size:10.5px;color:var(--apagado)}
+
+  button.acao.destaque-btn{border-color:var(--amarelo);color:var(--amarelo)}
+  button.acao.destaque-btn:hover{background:var(--amarelo);color:var(--asfalto)}
+  #tela-slide{width:100%;height:auto;display:block;border:1px solid var(--risco)}
+  .rolagem{overflow-x:auto;margin:0 -14px;padding:0 14px}
+  table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:12.5px}
+  th,td{border:1px solid var(--risco);padding:6px 7px;text-align:center;white-space:nowrap}
+  thead th{background:var(--amarelo);color:var(--asfalto);font-family:var(--display);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+  thead th.pctcol{background:#d9af00}
+  thead tr.sub th{background:#e6bd00}
+  thead th.ordenavel{cursor:pointer;user-select:none}
+  thead th.ordenavel:hover{background:#ffdc4d}
+  thead th.ordenavel::after{content:"⇅";opacity:.32;margin-left:5px;font-size:10px}
+  thead th.ordenavel.ativa{background:var(--asfalto);color:var(--amarelo)}
+  thead th.ordenavel.ativa::after{content:attr(data-seta);opacity:1}
+  tbody th{background:var(--chapa-alta);color:var(--texto);text-align:left;font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+  td.zero{color:#4e5359}
+  td.forte{background:var(--chapa-alta);font-weight:600}
+  tfoot th,tfoot td{background:#101214;font-weight:600;border-top:2px solid var(--amarelo)}
+  tfoot th{font-family:var(--display);letter-spacing:.08em;text-transform:uppercase;text-align:left}
+  td.pct-alto{color:var(--ok)} td.pct-medio{color:var(--atencao)} td.pct-baixo{color:var(--alerta)}
+  table.editavel input{width:88px;padding:4px 5px;text-align:center;font-size:12px}
+  table input.editado{border-color:var(--amarelo);color:var(--amarelo)}
+  .legenda{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-family:var(--mono);font-size:11.5px;color:var(--apagado)}
+  .legenda b{color:var(--texto);font-weight:600}
+  .legenda .pct-alto{color:var(--ok)} .legenda .pct-medio{color:var(--atencao)} .legenda .pct-baixo{color:var(--alerta)}
+
+  .funil{display:flex;flex-direction:column;gap:9px}
+  .etapa{display:grid;grid-template-columns:96px 1fr 74px;gap:10px;align-items:center}
+  .etapa .rot{font-family:var(--display);text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--apagado)}
+  .etapa .trilho{background:var(--asfalto);border:1px solid var(--risco);height:22px;position:relative;overflow:hidden}
+  .etapa .fita{background:var(--amarelo);height:100%;min-width:2px}
+  .etapa .fita.fria{background:#5b6167}
+  .etapa .num{font-family:var(--mono);font-size:13px;text-align:right}
+  .etapa .num small{display:block;color:var(--apagado);font-size:10.5px}
+  .perda{font-family:var(--mono);font-size:11px;color:var(--alerta);padding-left:106px;margin-top:-4px}
+
+  .area-anexo{border:2px dashed var(--risco);background:var(--asfalto);padding:24px 18px;text-align:center;cursor:pointer;display:flex;flex-direction:column;gap:6px;align-items:center;transition:border-color .15s,background .15s}
+  .area-anexo:hover,.area-anexo.sobre{border-color:var(--amarelo);background:var(--chapa-alta)}
+  .area-anexo strong{font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;font-size:14px;color:var(--amarelo)}
+  .area-anexo span{font-size:12.5px;color:var(--apagado)}
+  .area-anexo.pronta{border-style:solid;border-color:#2f5d3f}
+  .area-anexo.pronta strong{color:var(--ok)}
+
+  .opcoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .opcao{display:flex;align-items:center;gap:6px;border:1px solid var(--risco);background:var(--chapa-alta);
+    padding:5px 9px;font-family:var(--mono);font-size:11.5px;color:var(--texto);cursor:pointer}
+  .opcao input{width:auto;accent-color:var(--amarelo)}
+  .opcao b{color:var(--amarelo);font-weight:600}
+  .semanas{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .sem{font-family:var(--mono);font-size:11.5px;padding:7px 11px;border:1px solid var(--risco);background:var(--asfalto);
+    color:var(--texto);cursor:pointer;display:flex;gap:8px;align-items:baseline;transition:border-color .12s}
+  .sem:hover{border-color:var(--amarelo)}
+  .sem .rotulo{font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+  .sem .faixa{color:var(--apagado);font-size:10px}
+  .sem b{color:var(--amarelo);font-weight:600}
+  .sem.vazia{opacity:.45}
+  .sem.escolhida{background:var(--amarelo);border-color:var(--amarelo);color:var(--asfalto)}
+  .sem.escolhida .faixa{color:#5a4a00} .sem.escolhida b{color:var(--asfalto)}
+  .sem .marca{font-family:var(--display);font-size:10px;letter-spacing:.1em}
+  .semanas .aviso{font-family:var(--mono);font-size:11.5px;color:var(--apagado)}
+  .filtro{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+  .filtro .rot{font-family:var(--display);text-transform:uppercase;letter-spacing:.14em;font-size:10.5px;color:var(--apagado);margin-right:4px}
+  .chip{font-family:var(--display);text-transform:uppercase;letter-spacing:.1em;font-size:12px;padding:8px 14px;
+    border:1px solid var(--risco);background:var(--chapa);color:var(--apagado);cursor:pointer;transition:border-color .12s,color .12s}
+  .chip:hover{border-color:var(--amarelo);color:var(--texto)}
+  .chip.ativo{background:var(--amarelo);border-color:var(--amarelo);color:var(--asfalto);font-weight:600}
+  .chip:focus-visible{outline:2px solid var(--amarelo);outline-offset:2px}
+  .chip b{font-family:var(--mono);font-weight:600;margin-left:6px;letter-spacing:0}
+  .grade-anexos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.grade-anexos{grid-template-columns:1fr}}
+  .grade-mapa{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:14px}
+  .par-mapa{display:grid;grid-template-columns:1fr 118px;gap:6px}
+  .caixa{margin-top:12px;border:1px solid var(--risco);background:var(--asfalto);padding:10px 12px;font-family:var(--mono);font-size:11.5px;color:var(--apagado);line-height:1.7}
+  .caixa b{color:var(--texto);font-weight:600}
+  .dica .aten{color:var(--atencao)}
+  .caixa .ok{color:var(--ok)} .caixa .ruim{color:var(--alerta)} .caixa .aten{color:var(--atencao)}
+  .selo-estado{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:none;color:var(--apagado);font-weight:400}
+  .selo-estado.ok{color:var(--ok)} .selo-estado.ruim{color:var(--alerta)}
+  .dica{margin-top:11px;font-size:12.5px;color:var(--apagado)}
+  .dica code{font-family:var(--mono);color:var(--amarelo);font-size:12px}
+  .recado{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ok);opacity:0;transition:opacity .18s}
+  .recado.visivel{opacity:1}
+  .avisos{margin-top:14px;border:1px solid #6b2b2b;background:#241a1a;padding:11px 13px}
+  .avisos h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.14em;font-size:11.5px;margin:0 0 7px;color:var(--alerta)}
+  .avisos ul{margin:0;padding-left:17px} .avisos li{font-size:13px;margin-bottom:3px}
+  .vazio{padding:40px 18px;text-align:center;color:var(--apagado);font-family:var(--display);text-transform:uppercase;letter-spacing:.14em;font-size:13px}
+  .historico{font-family:var(--mono);font-size:12px;max-height:260px;overflow-y:auto;border:1px solid var(--risco);background:var(--asfalto)}
+  .historico div{padding:7px 10px;border-bottom:1px solid var(--risco);display:flex;gap:12px;flex-wrap:wrap}
+  .historico div:last-child{border-bottom:0}
+  .historico b{color:var(--amarelo);font-weight:600}
+  .historico span{color:var(--apagado)}
+  .grade-fontes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;background:var(--risco);border:1px solid var(--risco)}
+  .grade-fontes > div{background:var(--asfalto);padding:10px 12px;font-family:var(--mono);font-size:11.5px;line-height:1.7}
+  .grade-fontes b{display:block;font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--amarelo);margin-bottom:3px}
+  .grade-fontes .colunas{color:var(--texto)}
+  .grade-fontes .quando{color:var(--apagado)}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>
+  thead tr.sub th{background:#e6bd00}
+  thead th.dep{background:#d9af00;font-size:11px}
+  th.canal{min-width:172px}
+  .bloco.loja > h2 em{font-style:normal;color:var(--amarelo)}
+  td.conv{background:var(--chapa-alta);font-weight:600}
+</style>
+</head>
+<body>
+<div class="envelope">
+
+  <header class="topo">
+    <h1>Painel <em>leads</em> - Renault</h1>
+    <span class="carimbo" id="carimbo-mes">Agosto 2026 · Renault</span>
+    <span class="carimbo secundaria" id="carimbo-fonte">Sem atualização nesta sessão</span>
+  </header>
+
+  <div class="placar" id="placar"></div>
+
+  <nav role="tablist">
+    <button role="tab" data-aba="loja" aria-selected="true">Relatório por loja</button>
+    <button role="tab" data-aba="vendedor" aria-selected="false">Relatório por vendedor</button>
+    <button role="tab" data-aba="canais" aria-selected="false">Relatório por mídia</button>
+    <button role="tab" data-aba="lancar" aria-selected="false">Lançar à mão <span class="trava" id="trava-lancar">🔒</span></button>
+    <button role="tab" data-aba="ajustes" aria-selected="false">Ajustes <span class="trava" id="trava-ajustes">🔒</span></button>
+  </nav>
+
+  <section class="painel" id="aba-canais" hidden>
+    <div class="filtro" id="filtro"></div>
+
+    <div class="bloco" id="bloco-geral">
+      <h2>Total geral <span class="selo-estado" id="selo-geral"></span>
+        <span class="controles">
+          <button class="acao miudo" id="btn-ordem-padrao-canais">Ordenação padrão</button>
+          <button class="acao" data-copiar="geral">Copiar tabela</button>
+          <button class="acao destaque-btn" data-slide="geral">Slide</button>
+          <span class="recado" id="recado-geral">Copiado</span>
+        </span>
+      </h2>
+      <div class="miolo">
+        <div class="rolagem" id="tabela-geral"></div>
+        <div class="legenda">
+          <span><b>%conv.:</b> vendas sobre entrantes, somando VN e VDA</span>
+          <span class="pct-alto">acima do total</span>
+          <span class="pct-medio">igual</span>
+          <span class="pct-baixo">abaixo</span>
+        </div>
+        <p class="dica" id="dica-geral"></p>
+      </div>
+    </div>
+
+    <div id="blocos-lojas"></div>
+  </section>
+
+  <section class="painel" id="aba-loja">
+    <div class="bloco">
+      <h2>VN por loja <span class="selo-estado" id="selo-loja-vn"></span>
+        <span class="controles">
+          <button class="acao miudo" id="btn-ordem-padrao-loja-vn">Ordenação padrão</button>
+          <button class="acao" id="btn-copiar-loja-vn">Copiar tabela</button>
+          <button class="acao destaque-btn" id="btn-slide-loja-vn">Slide</button>
+          <span class="recado" id="recado-loja-vn">Copiado</span>
+        </span>
+      </h2>
+      <div class="miolo">
+        <div class="rolagem" id="tabela-loja-vn"></div>
+        <p class="dica"><b>Entrantes</b> é o total de leads do relatório de Entrantes. <b>Encaminhados</b> são os leads cujo vendedor tem prefixo <code>[ VN ]</code> ou <code>[ GVN ]</code> (não entra quem está SEM VENDEDOR). <b>Agendados</b> e <b>Fluxo</b> saem dos seus respectivos relatórios de mergulho; <b>Venda</b>, do lançamento manual ou do Google Sheets. As porcentagens: <code>Enc/Ent</code>, <code>Ag/Ent</code>, <code>Fluxo/Ag</code>, <code>Venda/Fluxo</code> e <code>Venda/Ent</code>.</p>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>VDA por praça <span class="selo-estado" id="selo-loja-vd"></span>
+        <span class="controles">
+          <button class="acao miudo" id="btn-ordem-padrao-loja-vd">Ordenação padrão</button>
+          <button class="acao" id="btn-copiar-loja-vd">Copiar tabela</button>
+          <button class="acao destaque-btn" id="btn-slide-loja-vd">Slide</button>
+          <span class="recado" id="recado-loja-vd">Copiado</span>
+        </span>
+      </h2>
+      <div class="miolo">
+        <div class="rolagem" id="tabela-loja-vd"></div>
+        <p class="dica"><b>Pernambuco</b> soma Imbiribeira, Piedade, Afogados e Olinda; <b>Paraíba</b> soma Epitácio e Cabedelo; <b>Bahia</b> soma Iguatemi e Lauro. <b>Encaminhados</b> aqui conta leads cujo vendedor tem prefixo <code>[ VD ]</code> ou é um nome marcado como VDA sem prefixo (Maurílio).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="painel" id="aba-vendedor" hidden>
+    <div class="bloco">
+      <h2>Filtros <span class="selo-estado" id="selo-filtro-vendedor"></span></h2>
+      <div class="miolo">
+        <div class="grade-mapa">
+          <div><label class="campo" for="filtro-vendedor-dep">Departamento</label>
+            <select id="filtro-vendedor-dep">
+              <option value="">Todos</option>
+              <option value="vn">VN</option>
+              <option value="vd">VDA</option>
+            </select></div>
+          <div><label class="campo" for="filtro-vendedor-praca">Praça</label>
+            <select id="filtro-vendedor-praca">
+              <option value="">Todas</option>
+            </select></div>
+          <div><label class="campo" for="filtro-vendedor-loja">Loja</label>
+            <select id="filtro-vendedor-loja">
+              <option value="">Todas</option>
+            </select></div>
+        </div>
+        <div class="barra">
+          <button class="acao miudo" id="btn-limpar-filtro-vendedor">Limpar filtros</button>
+          <button class="acao miudo" id="btn-ordem-padrao-vendedor">Ordenação padrão</button>
+          <button class="acao" id="btn-copiar-vendedor">Copiar tabela</button>
+          <span class="recado" id="recado-vendedor">Copiado</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>Relatório por vendedor <span class="selo-estado" id="selo-vendedor"></span></h2>
+      <div class="miolo">
+        <div class="rolagem" id="tabela-vendedor"></div>
+        <p class="dica">Cada linha é um vendedor identificado nos relatórios de mergulho pelo prefixo (<code>[ VN ]</code>, <code>[ GVN ]</code>, <code>[ VD ]</code>) ou pela regra fixa (Maurílio em VDA). <b>Entrantes</b>, <b>Agendados</b> e <b>Fluxo</b> saem dos relatórios de mergulho; a coluna <b>Venda</b> só é preenchida pela leitura do Google Sheets (o lançamento manual não guarda vendedor). Encaminhados não aparece aqui porque, no nível do vendedor, Encaminhado = Entrantes (só entra na lista quem tem lead atribuído). Os filtros se combinam: ao escolher uma praça, a lista de lojas se restringe a ela.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="painel" id="aba-lancar" hidden>
+    <div class="bloco">
+      <h2>Vendas lançadas à mão <span class="selo-estado" id="selo-manual">grava a cada campo alterado</span>
+        <span class="controles">
+          <label for="sel-loja-manual">Loja</label>
+          <select id="sel-loja-manual" style="width:auto"></select>
+        </span>
+      </h2>
+      <div class="miolo">
+        <div class="rolagem" id="tabela-manual"></div>
+        <p class="dica" style="margin-top:10px">Os relatórios de mergulho alimentam entrantes, agendados e fluxo. A venda é digitada aqui, por canal e por departamento.</p>
+        <div class="barra">
+          <button class="acao" id="btn-zerar-manual">Zerar as vendas desta loja</button>
+          <button class="acao miudo" id="btn-soltar-manual">Voltar a usar a planilha</button>
+          <span class="recado" id="recado-manual">Salvo</span>
+        </div>
+        <div class="caixa" id="caixa-manual"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="bloco" id="bloco-slide" hidden>
+    <h2 id="titulo-slide">Slide
+      <span class="controles">
+        <label for="sel-tamanho">Tamanho</label>
+        <select id="sel-tamanho" style="width:auto">
+          <option value="pequeno">Pequeno · 1200×675</option>
+          <option value="medio">Médio · 1600×900</option>
+          <option value="grande">Grande · 1920×1080</option>
+        </select>
+        <button class="acao miudo principal" id="btn-copiar-slide">Copiar imagem</button>
+        <button class="acao miudo" id="btn-baixar-slide">Baixar PNG</button>
+        <button class="acao miudo" id="btn-fechar-slide">Fechar</button>
+        <span class="recado" id="recado-slide">Copiado</span>
+      </span>
+    </h2>
+    <div class="miolo">
+      <canvas id="tela-slide" width="1920" height="1080"></canvas>
+      <p class="dica">Clique em <b>Copiar imagem</b> e cole direto no WhatsApp ou no e-mail. Se o navegador bloquear a cópia, ele baixa o PNG automaticamente.</p>
+    </div>
+  </div>
+
+  <section class="painel" id="aba-ajustes" hidden>
+    <div class="bloco">
+      <h2>O que já foi lido <span class="selo-estado" id="selo-composicao"></span></h2>
+      <div class="miolo">
+        <div class="rolagem" id="tabela-cobertura"></div>
+        <p class="dica">Cada etapa tem o seu relatório. Reimportar substitui só aquela etapa, sem tocar nas outras, e as vendas ficam por conta do lançamento manual.</p>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>Vendas pelo Google Sheets <span class="selo-estado" id="selo-google">nenhum link configurado</span></h2>
+      <div class="miolo">
+        <div class="grade-mapa">
+          <div style="grid-column:1/-1"><label class="campo" for="link-vendas">Link da planilha de vendas</label>
+            <input type="url" id="link-vendas" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0"></div>
+          <div><label class="campo" for="aba-google">Aba do mês</label>
+            <input type="text" id="aba-google" spellcheck="false" placeholder="SETEMBRO2026"></div>
+        </div>
+        <div class="barra">
+          <button class="acao principal" id="btn-ler-google">Ler vendas do Google</button>
+          <button class="acao miudo" id="btn-abrir-google">Abrir planilha</button>
+          <span class="recado" id="recado-google">Pronto</span>
+        </div>
+        <div class="caixa" id="caixa-google"></div>
+        <p class="dica">O link vale como base fixa: fica guardado e você só troca a aba a cada mês. A planilha precisa estar aberta para leitura — em <b>Compartilhar</b>, deixe como <i>qualquer pessoa com o link</i>. Colunas esperadas: <code>LOJA</code>, <code>DATA DA VENDA</code>, <code>NF</code>, <code>MÍDIA</code>, <code>VENDEDOR</code> e <code>DEPARTAMENTO</code>. <b>Toda linha preenchida</b> (com data, cliente ou vendedor) conta como <b>venda</b>; <b>faturado</b> conta quando a coluna <code>NF</code> tem um <b>número</b> (texto como "FATURADO" ou "Falta doc" não conta). O <b>departamento</b> (VN/VDA) sai da coluna <code>DEPARTAMENTO</code>; se ela estiver ausente ou vazia, cai no prefixo do Vendedor (<code>[ VN ]</code>, <code>[ GVN ]</code>, <code>[ VD ]</code> ou Maurílio) — abas antigas sem coluna DEPARTAMENTO e sem prefixo no vendedor ficam fora da conta.</p>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>Backup no Google Drive <span class="selo-estado" id="selo-drive">não configurado</span></h2>
+      <div class="miolo">
+        <div class="grade-mapa">
+          <div style="grid-column:1/-1"><label class="campo" for="url-drive">Endereço do app de backup</label>
+            <input type="url" id="url-drive" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec"></div>
+          <div><label class="campo" for="auto-drive">Ao abrir o painel</label>
+            <select id="auto-drive">
+              <option value="0">Não carregar sozinho</option>
+              <option value="1">Carregar o último backup do Drive</option>
+            </select></div>
+        </div>
+        <div class="barra">
+          <button class="acao principal" id="btn-subir-drive">Subir backup agora</button>
+          <button class="acao" id="btn-baixar-drive">Carregar do Drive</button>
+          <button class="acao miudo" id="btn-testar-drive">Testar conexão</button>
+          <span class="recado" id="recado-drive">Pronto</span>
+        </div>
+        <div class="caixa" id="caixa-drive"></div>
+        <p class="dica">Serve para abrir o painel em outro computador com os mesmos números. O envio é manual, no botão, e guarda um arquivo por vez na pasta do Drive. O passo a passo para criar o app está no arquivo <code>backup-drive.gs</code> que mandei junto.</p>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>Anexar os relatórios de mergulho <span class="selo-estado" id="selo-arquivo">nenhum arquivo carregado</span></h2>
+      <div class="miolo">
+        <div class="grade-anexos">
+          <div>
+            <label class="campo">1 · Entrantes <span class="selo-estado" id="selo-ent">nenhum arquivo</span></label>
+            <div class="area-anexo" data-anexo="ent">
+              <strong>Anexar entrantes</strong>
+              <span>relatório <b>Mergulho por Empresa · Fluxo Total Dia</b></span>
+              <span>arraste aqui ou clique para escolher</span>
+              <input type="file" data-arquivo="ent" accept=".xlsx,.xls,.csv" multiple hidden>
+            </div>
+          </div>
+          <div>
+            <label class="campo">2 · Agendados <span class="selo-estado" id="selo-ag">nenhum arquivo</span></label>
+            <div class="area-anexo" data-anexo="ag">
+              <strong>Anexar agendados</strong>
+              <span>relatório <b>Mergulho por Empresa · Cli. Agendados</b></span>
+              <span>arraste aqui ou clique para escolher</span>
+              <input type="file" data-arquivo="ag" accept=".xlsx,.xls,.csv" multiple hidden>
+            </div>
+          </div>
+          <div>
+            <label class="campo">3 · Fluxo, comparecidos agendados <span class="selo-estado" id="selo-cAg">nenhum arquivo</span></label>
+            <div class="area-anexo" data-anexo="cAg">
+              <strong>Anexar fluxo, agendados</strong>
+              <span>relatório <b>Mergulho por Empresa · Comp. Agendado</b></span>
+              <span>arraste aqui ou clique para escolher</span>
+              <input type="file" data-arquivo="cAg" accept=".xlsx,.xls,.csv" multiple hidden>
+            </div>
+          </div>
+          <div>
+            <label class="campo">4 · Fluxo, comparecidos não agendados <span class="selo-estado" id="selo-cNao">nenhum arquivo</span></label>
+            <div class="area-anexo" data-anexo="cNao">
+              <strong>Anexar fluxo, não agendados</strong>
+              <span>relatório <b>Mergulho por Empresa · Comp. Não Agendado</b></span>
+              <span>arraste aqui ou clique para escolher</span>
+              <input type="file" data-arquivo="cNao" accept=".xlsx,.xls,.csv" multiple hidden>
+            </div>
+          </div>
+        </div>
+        <div id="mapa-midia"></div>
+        <p class="dica">Cada etapa tem o seu botão e o seu relatório, na ordem do funil. As duas partes do fluxo somam na mesma coluna. Dá para anexar os quatro e aplicar de uma vez. São os mesmos relatórios do painel de leads, lidos linha por linha: a <b>loja</b> sai da coluna <code>Empresa</code>, o <b>canal</b> da coluna <code>Midia</code> e o <b>departamento</b> do prefixo do <code>Vendedor</code>. Nos <b>entrantes</b>, quem está sem vendedor entra em VN; nas outras etapas essas linhas ficam fora e são apenas avisadas. Todas as linhas do relatório entram: não há descarte por motivo de conclusão. As duas planilhas de comparecidos somam na coluna Fluxo. As <b>vendas</b> continuam vindo da aba Lançar à mão.</p>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>Tipo da mídia e canal <span class="selo-estado" id="selo-mapa"></span></h2>
+      <div class="miolo">
+        <div class="rolagem" id="tabela-mapa"></div>
+        <div class="barra">
+          <button class="acao miudo" id="btn-mapa-padrao">Voltar ao mapa padrão</button>
+          <span class="recado" id="recado-mapa">Salvo</span>
+        </div>
+        <p class="dica">O que aparece no relatório é o <b>tipo da mídia</b>; o painel agrupa no <b>canal</b> da sua planilha. Maiúsculas, acentos e espaços não importam, então <code>FACEBOOK</code> e <code>Facebook</code> caem na mesma linha. Tipo novo que apareça na importação entra como <b>OUTROS</b> para você classificar.</p>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>Regras de cálculo</h2>
+      <div class="miolo">
+        <div class="grade-mapa">
+          <div>
+            <label class="campo" for="rotulo-mes">Carimbo do mês</label>
+            <input type="text" id="rotulo-mes" spellcheck="false">
+          </div>
+          <div>
+            <label class="campo" for="sel-vazias">Lojas sem dado</label>
+            <select id="sel-vazias">
+              <option value="0">Esconder</option>
+              <option value="1">Mostrar zeradas</option>
+            </select>
+          </div>
+        </div>
+        <p class="dica">Entrantes saem da coluna <b>Fluxo Total Dia</b> do relatório, agendados de <b>Cli. Agendados</b>, fluxo da soma de <b>Comp. Agendado</b> com <b>Comp. Não Agendado</b>, e vendas de <b>Vendidos</b>. Dá para trocar cada uma na hora da importação.</p>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>Histórico de importações <span class="selo-estado" id="estado-base"></span></h2>
+      <div class="miolo">
+        <div class="historico" id="historico"></div>
+        <div class="barra">
+          <button class="acao" id="btn-backup">Baixar backup completo</button>
+          <button class="acao" id="btn-restaurar">Restaurar backup</button>
+          <button class="acao" id="btn-exportar">Baixar CSV</button>
+          <input type="file" id="arquivo-backup" accept="application/json" hidden>
+          <span class="recado" id="recado-dados">Pronto</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>Zona de risco</h2>
+      <div class="miolo">
+        <div class="barra"><button class="acao perigo" id="btn-zerar">Apagar tudo</button></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ============ domínio ============ */
+const LOJAS=[
+  {nome:'IMBIRIBEIRA',praca:'PERNAMBUCO'},{nome:'PIEDADE',praca:'PERNAMBUCO'},
+  {nome:'AFOGADOS',praca:'PERNAMBUCO'},{nome:'OLINDA',praca:'PERNAMBUCO'},
+  {nome:'CABEDELO',praca:'PARAÍBA'},{nome:'EPITÁCIO',praca:'PARAÍBA'},
+  {nome:'IGUATEMI',praca:'BAHIA'},{nome:'LAURO',praca:'BAHIA'}];
+const NOMES=LOJAS.map(l=>l.nome);
+const PRACAS=['PERNAMBUCO','PARAÍBA','BAHIA'];
+const pracaDe=n=>(LOJAS.find(l=>l.nome===n)||{}).praca;
+const PRACA_LOJAS={}; PRACAS.forEach(p=>PRACA_LOJAS[p]=NOMES.filter(n=>pracaDe(n)===p));
+
+const DEPS=[{k:'vn',rot:'VN'},{k:'vd',rot:'VDA'}];
+const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+const chave=s=>String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const MAPA_LOJA={}; NOMES.forEach(n=>MAPA_LOJA[chave(n)]=n);
+Object.assign(MAPA_LOJA,{epitacio:'EPITÁCIO',laurodefreitas:'LAURO'});
+const APELIDOS=NOMES.map(n=>({loja:n,ch:chave(n)})).concat([{loja:'LAURO',ch:'laurodefreitas'}]);
+function acharLoja(cru){
+  const c=chave(cru); if(!c) return null;
+  if(MAPA_LOJA[c]) return MAPA_LOJA[c];
+  const bate=APELIDOS.find(a=>c.indexOf(a.ch)>=0);
+  return bate?bate.loja:null;
+}
+
+/* canais na ordem da planilha */
+const CANAIS=['MONTADORA','REDES SOCIAIS','WHATSAPP R. SOCIAIS','GOOGLE','WHATSAPP GOOGLE','OLX','INDICAÇÃO LEADS','OUTROS'];
+const SEM_CLASSE='OUTROS';
+/* tipo da mídia como sai no relatório → canal */
+const MAPA_PADRAO={
+  'DIRECT':'GOOGLE',
+  'FACEBOOK':'WHATSAPP R. SOCIAIS',
+  'GOOGLE':'WHATSAPP GOOGLE',
+  'GOOGLESM':'GOOGLE',
+  'INDICACAO LEADS':'INDICAÇÃO LEADS',
+  'INSTAGRAM':'WHATSAPP R. SOCIAIS',
+  'OLX':'OLX',
+  'ORGANICO':'WHATSAPP GOOGLE',
+  'SITE MONTADORA':'MONTADORA',
+  'SITE ORGANIGO':'WHATSAPP GOOGLE',
+  'WHATSAPP':'WHATSAPP GOOGLE',
+  'WHATSAPP BDC':'WHATSAPP GOOGLE',
+  'SYNDICAT SEARCH':'GOOGLE',
+  'SITE VIASUL':'GOOGLE',
+  'WHATSAPP FACEBOOK':'WHATSAPP R. SOCIAIS'
+};
+/* nomes usados antes desta versão, para o dado já gravado não se perder */
+const CANAL_ANTIGO={'SITE MONTADORA':'MONTADORA','WHATSAPP - GOOGLE':'WHATSAPP GOOGLE',
+  'WHATSAPP - REDE SOCIAL':'WHATSAPP R. SOCIAIS','NÃO CLASSIFICADO':'OUTROS'};
+function mapaInicial(){
+  const m={},r={};
+  Object.keys(MAPA_PADRAO).forEach(k=>{ m[chave(k)]=MAPA_PADRAO[k]; r[chave(k)]=k; });
+  return {mapa:m,rotulos:r};
+}
+const canalDe=cru=>{
+  const c=chave(cru);
+  const v=(estado.config.mapaMidia||{})[c];
+  return CANAIS.indexOf(v)>=0 ? v : (CANAL_ANTIGO[v]||SEM_CLASSE);
+};
+
+/* etapas do relatório e o que cada uma alimenta */
+const ETAPAS_ARQ=[
+  {k:'ent',rot:'Entrantes',cab:'Fluxo Total Dia'},
+  {k:'ag',rot:'Agendados',cab:'Cli. Agendados'},
+  {k:'cAg',rot:'Comparecidos agendados',cab:'Comp. Agendado'},
+  {k:'cNao',rot:'Comparecidos não agendados',cab:'Comp. Não Agendado'},
+  {k:'vd',rot:'Vendas',cab:'Vendidos'}];
+const CAMPOS=['ent','enc','ag','cAg','cNao','vd','ft'];
+
+const vazio=()=>{
+  const o={};
+  NOMES.forEach(n=>{ o[n]={};
+    DEPS.forEach(d=>{ o[n][d.k]={};
+      CANAIS.forEach(m=>{ o[n][d.k][m]={}; CAMPOS.forEach(c=>o[n][d.k][m][c]=0); }); }); });
+  return o;
+};
+
+const LINK_VENDAS_PADRAO='';
+const ORDEM_PADRAO={lojaVN:{campo:'',dir:''},lojaVD:{campo:'',dir:''},
+  vendedor:{campo:'',dir:''},canais:{campo:'',dir:''}};
+const PADRAO={
+  manualVd:{},
+  config:Object.assign({rotuloMes:'Agosto 2026 · Renault',tamanhoSlide:'pequeno',mostrarVazias:false,
+    linkVendas:LINK_VENDAS_PADRAO,abaVendas:'',urlDrive:'',autoDrive:false,
+    filtroVendedor:{dep:'',praca:'',loja:''},
+    ordem:JSON.parse(JSON.stringify(ORDEM_PADRAO))},
+    (function(){const i=mapaInicial();return {mapaMidia:i.mapa,rotulosMidia:i.rotulos};})()),
+  dados:vazio(),
+  vendedores:{},
+  fontes:{}
+};
+/* loja|dep marcados aqui têm as vendas digitadas à mão, e a importação não as sobrescreve */
+
+let estado=JSON.parse(JSON.stringify(PADRAO));
+let historico=[];
+let bruto=null;
+let atualizadoEm=null;
+let baseViva=false;
+const memoria={};
+const CHAVE='eurovia:midia:v1:';
+
+/* ============ trava ============ */
+const SENHA='leadsrnlt';
+let destravado=false;
+const ABAS_TRAVADAS={lancar:'para abrir o lançamento manual',ajustes:'para abrir os ajustes'};
+function marcarTrava(){
+  ['lancar','ajustes'].forEach(k=>{ const t=document.getElementById('trava-'+k); if(t) t.textContent=destravado?'':'🔒'; });
+}
+function liberar(motivo){
+  if(destravado) return true;
+  const s=prompt('Senha '+motivo+':');
+  if(s===null) return false;
+  if(s.trim()===SENHA){ destravado=true; marcarTrava(); return true; }
+  alert('Senha incorreta.');
+  return false;
+}
+
+/* ============ persistência ============ */
+function guardarLocal(k,s){ try{ localStorage.setItem(CHAVE+k,s); return true; }catch(e){ return false; } }
+function buscarLocal(k){ try{ return localStorage.getItem(CHAVE+k); }catch(e){ return null; } }
+async function guardar(k,v){
+  const s=JSON.stringify(v);
+  try{ if(window.storage){ await window.storage.set(CHAVE+k,s); baseViva=true; return; } }catch(e){}
+  if(guardarLocal(k,s)){ baseViva=true; return; }
+  baseViva=false; memoria[k]=s;
+}
+async function buscar(k){
+  try{ if(window.storage){ const r=await window.storage.get(CHAVE+k); baseViva=true; if(r&&r.value) return JSON.parse(r.value); return null; } }catch(e){}
+  const l=buscarLocal(k);
+  if(l!==null){ baseViva=true; try{ return JSON.parse(l); }catch(e){ return null; } }
+  return memoria[k]?JSON.parse(memoria[k]):null;
+}
+async function salvarTudo(quieto){
+  await guardar('config',estado.config);
+  await guardar('dados',estado.dados);
+  await guardar('vendedores',estado.vendedores||{});
+  await guardar('manual',estado.manualVd||{});
+  await guardar('fontes',estado.fontes);
+  await guardar('historico',historico);
+  if(!quieto){ atualizadoEm=new Date().toISOString(); await guardar('atualizado',atualizadoEm); }
+  marcarEstado();
+}
+async function carregarTudo(){
+  const c=await buscar('config'),d=await buscar('dados'),f=await buscar('fontes'),h=await buscar('historico');
+  const mv=await buscar('manual'); estado.manualVd=(mv&&typeof mv==='object')?mv:{};
+  const vd=await buscar('vendedores'); estado.vendedores=(vd&&typeof vd==='object')?vd:{};
+  if(c) estado.config=Object.assign({},PADRAO.config,c);
+  /* direcionamento de vendedor não existe mais: apaga o que ficou gravado */
+  delete estado.config.destinoVendedor;
+  /* o descarte por motivo saiu do painel: limpa o que ficou gravado */
+  delete estado.config.filtros; delete estado.config.motivosFora;
+  if(!estado.config.filtroVendedor) estado.config.filtroVendedor={dep:'',praca:'',loja:''};
+  if(!estado.config.ordem) estado.config.ordem=JSON.parse(JSON.stringify(ORDEM_PADRAO));
+  ['lojaVN','lojaVD','vendedor','canais'].forEach(k=>{
+    if(!estado.config.ordem[k]) estado.config.ordem[k]={campo:'',dir:''};
+  });
+  if(d) estado.dados=normalizar(d);
+  if(f&&typeof f==='object') estado.fontes=f;
+  if(Array.isArray(h)) historico=h;
+  const at=await buscar('atualizado'); if(at) atualizadoEm=at;
+}
+function normalizar(d){
+  const o=vazio();
+  NOMES.forEach(n=>DEPS.forEach(dep=>{
+    const vindo=(((d||{})[n]||{})[dep.k])||{};
+    Object.keys(vindo).forEach(m=>{
+      const alvo = CANAIS.indexOf(m)>=0 ? m : (CANAL_ANTIGO[m]||SEM_CLASSE);
+      CAMPOS.forEach(c=>{ o[n][dep.k][alvo][c]+=Math.max(0,Math.round(+((vindo[m]||{})[c])||0)); });
+    });
+  }));
+  return o;
+}
+function marcarEstado(){
+  const el=document.getElementById('estado-base');
+  if(el){
+    el.textContent = baseViva ? historico.length+' registros no histórico'
+      : 'atenção: gravando só nesta sessão — baixe o backup antes de fechar';
+    el.className='selo-estado'+(baseViva?'':' ruim');
+  }
+  marcarCarimbo();
+}
+function marcarCarimbo(){
+  const mes=document.getElementById('carimbo-mes');
+  if(mes) mes.textContent=estado.config.rotuloMes||'Renault';
+  const el=document.getElementById('carimbo-fonte'); if(!el) return;
+  if(!atualizadoEm){ el.textContent='Sem atualização nesta sessão'; return; }
+  const q=new Date(atualizadoEm), hoje=new Date();
+  const hora=q.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  el.innerHTML = q.toDateString()===hoje.toDateString()
+    ? 'Atualizado às <b>'+hora+'</b>'
+    : 'Atualizado em <b>'+q.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+'</b> às <b>'+hora+'</b>';
+}
+
+/* ============ cálculos ============ */
+const pct=(a,b)=>b>0?a/b:0;
+const fmtPct=x=>(x*100).toFixed(0)+'%';
+const fmtNum=x=>Math.round(x).toLocaleString('pt-BR');
+const classeComp=(x,ref)=>{
+  const a=Math.round(x*100), b=Math.round(ref*100);
+  if(a>=100) return 'pct-alto';
+  return a>b?'pct-alto':(a===b?'pct-medio':'pct-baixo');
+};
+let praca=null, lojaSel=null;
+const lojasAtivas=()=>{
+  if(lojaSel) return [lojaSel];
+  return praca ? PRACA_LOJAS[praca].slice() : NOMES.slice();
+};
+const rotuloAtivo=()=> lojaSel || praca || 'Eurovia';
+
+/* célula de um canal: VN e VDA separados em cada etapa */
+function celula(lojas,canais){
+  const un=dk=>{
+    const t={ent:0,enc:0,ag:0,fl:0,vd:0};
+    lojas.forEach(n=>canais.forEach(m=>{
+      const r=(((estado.dados[n]||{})[dk]||{})[m])||{};
+      t.ent+=+r.ent||0; t.enc+=+r.enc||0; t.ag+=+r.ag||0;
+      t.fl+=(+r.cAg||0)+(+r.cNao||0); t.vd+=+r.vd||0;
+    }));
+    return t;
+  };
+  const vn=un('vn'), vd=un('vd');
+  const ent=vn.ent+vd.ent, vend=vn.vd+vd.vd;
+  return {vn,vd,ent,vend,temEnt:ent>0,conv:pct(vend,ent),
+    total:{ent:ent,enc:vn.enc+vd.enc,ag:vn.ag+vd.ag,fl:vn.fl+vd.fl,vd:vend}};
+}
+const temDado=lojas=>{
+  const c=celula(lojas,CANAIS);
+  return c.total.ent||c.total.ag||c.total.fl||c.total.vd;
+};
+const lojasComDado=()=>lojasAtivas().filter(n=>temDado([n]));
+
+/* ============ tabela no formato da planilha ============ */
+const ETAPAS_TAB=[['ent','Entrantes'],['ag','Agendados'],['fl','Fluxo'],['vd','Vendas'],['ft','Faturados']];
+function _extCanal(l,campo){
+  if(campo==='canal') return l.canal||'';
+  if(campo==='conv')  return l.c.temEnt?l.c.conv:-1;
+  /* campos no formato "etapa_dep" (ex.: ent_vn, vd_vd) */
+  const p=campo.split('_');
+  if(p.length===2 && l.c[p[1]]) return +l.c[p[1]][p[0]]||0;
+  return 0;
+}
+function tabelaCanais(lojas){
+  const geral=celula(lojas,CANAIS);
+  const usados=CANAIS.filter(m=>{
+    if(estado.config.mostrarVazias) return true;
+    const c=celula(lojas,[m]);
+    return c.total.ent||c.total.ag||c.total.fl||c.total.vd;
+  });
+  const linha=(rot,c,rodape)=>{
+    let h='<tr>'+(rodape?'<th>'+rot+'</th>':'<th>'+rot+'</th>');
+    ETAPAS_TAB.forEach(([k])=>{
+      h+='<td class="'+(c.vn[k]?'':'zero')+'">'+fmtNum(c.vn[k])+'</td>'+
+         '<td class="'+(c.vd[k]?'':'zero')+'">'+fmtNum(c.vd[k])+'</td>';
+    });
+    h+='<td class="conv '+(rodape?'':(c.temEnt?classeComp(c.conv,geral.conv):''))+'">'+
+       (c.temEnt?fmtPct(c.conv):'—')+'</td></tr>';
+    return h;
+  };
+  const ord=(estado.config.ordem||{}).canais||{campo:'',dir:''};
+  const linhas=usados.map(m=>({canal:m,c:celula(lojas,[m])}));
+  const linhasOrd=ordenarLinhas(linhas,ord,_extCanal);
+  const corpo=linhasOrd.map(l=>linha(l.canal,l.c,false)).join('');
+  const T=(c,r,extra)=>thOrd('canais',c,r,extra).replace('<th','<th rowspan="2"');
+  const S=(c,r,extra)=>thOrd('canais',c,r,extra);
+  const sup = ETAPAS_TAB.map(e=>'<th colspan="2">'+e[1]+'</th>').join('');
+  const subs = ETAPAS_TAB.map(e=>S(e[0]+'_vn','VN',' dep')+S(e[0]+'_vd','VDA',' dep')).join('');
+  return '<table><thead>'+
+    '<tr>'+T('canal','Canal',' canal')+sup+T('conv','%conv.')+'</tr>'+
+    '<tr class="sub">'+subs+'</tr>'+
+    '</thead><tbody>'+corpo+'</tbody>'+
+    '<tfoot>'+linha('Total',geral,true)+'</tfoot></table>';
+}
+function _ligarOrdemCanais(root){
+  root.querySelectorAll('th.ordenavel').forEach(th=>{
+    th.addEventListener('click',()=>trocarOrdem('canais',th.dataset.ordem,()=>{
+      desenharGeral(); desenharLojas();
+    }));
+  });
+}
+function desenharGeral(){
+  const lojas=lojasComDado();
+  const alvo=document.getElementById('tabela-geral');
+  if(!lojas.length){
+    alvo.innerHTML='<div class="vazio">Nenhum relatório importado para este recorte</div>';
+    document.getElementById('selo-geral').textContent='sem dado';
+    document.getElementById('dica-geral').innerHTML='';
+    return;
+  }
+  alvo.innerHTML=tabelaCanais(lojas);
+  _ligarOrdemCanais(alvo);
+  const c=celula(lojas,CANAIS);
+  const ord=(estado.config.ordem||{}).canais||{campo:'',dir:''};
+  document.getElementById('selo-geral').textContent=
+    rotuloAtivo()+' · '+lojas.length+' loja(s) · '+fmtNum(c.total.ent)+' entrantes'+
+    (ord.campo?' · ordenada por '+ord.campo+' '+ord.dir:'');
+  document.getElementById('dica-geral').innerHTML=
+    'Entrantes saem da coluna <b>Fluxo Total Dia</b> do relatório, agendados de <b>Cli. Agendados</b>, '+
+    'fluxo da soma de <b>Comp. Agendado</b> com <b>Comp. Não Agendado</b> e vendas de <b>Vendidos</b>. '+
+    'Cada etapa aparece dividida em VN e VDA, e o <b>%conv.</b> é a venda sobre o entrante somando os dois.';
+}
+function desenharLojas(){
+  const alvo=document.getElementById('blocos-lojas');
+  const lojas=lojasComDado();
+  if(!lojas.length){ alvo.innerHTML=''; return; }
+  alvo.innerHTML=lojas.map(n=>{
+    const c=celula([n],CANAIS);
+    return '<div class="bloco loja">'+
+      '<h2><em>'+n+'</em> <span class="selo-estado">'+pracaDe(n)+' · '+fmtNum(c.total.ent)+' entrantes · '+
+        fmtNum(c.total.vd)+' vendas</span>'+
+      '<span class="controles">'+
+        '<button class="acao miudo" data-copiar="loja:'+n+'">Copiar tabela</button>'+
+        '<button class="acao miudo destaque-btn" data-slide="loja:'+n+'">Slide</button>'+
+      '</span></h2>'+
+      '<div class="miolo"><div class="rolagem">'+tabelaCanais([n])+'</div>'+
+      '<span class="recado" id="recado-loja-'+chave(n)+'">Copiado</span></div></div>';
+  }).join('');
+  alvo.querySelectorAll('[data-slide]').forEach(b=>b.addEventListener('click',()=>gerarSlide(b.dataset.slide)));
+  alvo.querySelectorAll('[data-copiar]').forEach(b=>b.addEventListener('click',()=>copiarTabela(b.dataset.copiar)));
+  _ligarOrdemCanais(alvo);
+}
+
+/* ============ placar e filtro ============ */
+function desenharPlacar(){
+  const lojas=lojasAtivas();
+  const c=celula(lojas,CANAIS);
+  document.getElementById('placar').innerHTML=
+    '<div><span>Entrantes'+(lojaSel?' · '+lojaSel:(praca?' · '+praca:''))+'</span><strong>'+fmtNum(c.total.ent)+'</strong></div>'+
+    '<div><span>Agendados</span><strong>'+fmtNum(c.total.ag)+'</strong></div>'+
+    '<div><span>Fluxo</span><strong>'+fmtNum(c.total.fl)+'</strong></div>'+
+    '<div><span>Vendas</span><strong class="destaque">'+fmtNum(c.total.vd)+'</strong></div>'+
+    '<div><span>VN / VDA</span><strong>'+fmtNum(c.vn.vd)+' / '+fmtNum(c.vd.vd)+'</strong></div>'+
+    '<div><span>%conv.</span><strong>'+fmtPct(c.conv)+'</strong></div>';
+}
+function desenharFiltro(){
+  const el=document.getElementById('filtro'); if(!el) return;
+  const chip=(valor,rot,lojas)=>{
+    const c=celula(lojas,CANAIS);
+    const ativo = valor===null ? (!praca&&!lojaSel) : (praca===valor && !lojaSel);
+    return '<button class="chip'+(ativo?' ativo':'')+(c.total.ent?'':' vazia')+'" data-praca="'+(valor||'')+'">'+rot+
+      '<b>'+fmtNum(c.total.ent)+'</b></button>';
+  };
+  el.innerHTML='<span class="rot">Praça</span>'+chip(null,'Todas',NOMES)+
+    PRACAS.map(p=>chip(p,p,PRACA_LOJAS[p])).join('')+
+    '<span class="rot" style="margin-left:8px">Loja</span>'+
+    '<select data-loja style="width:auto"><option value="">Todas</option>'+
+    NOMES.filter(n=>!praca||pracaDe(n)===praca).map(n=>'<option value="'+n+'"'+(lojaSel===n?' selected':'')+'>'+
+      n+(temDado([n])?'':' (sem dado)')+'</option>').join('')+'</select>';
+  el.querySelectorAll('[data-praca]').forEach(b=>b.addEventListener('click',()=>{
+    praca=b.dataset.praca||null; lojaSel=null; atualizar();
+  }));
+  el.querySelector('[data-loja]').addEventListener('change',e=>{
+    lojaSel=e.target.value||null;
+    if(lojaSel) praca=pracaDe(lojaSel);
+    atualizar();
+  });
+}
+function copiarTabela(alvo){
+  const lojas = alvo==='geral' ? lojasComDado() : [alvo.split(':')[1]];
+  const usados=CANAIS.filter(m=>{
+    if(estado.config.mostrarVazias) return true;
+    const c=celula(lojas,[m]);
+    return c.total.ent||c.total.ag||c.total.fl||c.total.vd;
+  });
+  const cab1=['CANAL'].concat(ETAPAS_TAB.map(e=>e[1].toUpperCase()+'\t')).join('\t')+'\t%CONV.';
+  const cab2=[''].concat(ETAPAS_TAB.map(()=>'VN\tVDA')).join('\t');
+  const linha=(rot,c)=>[rot].concat(ETAPAS_TAB.map(([k])=>c.vn[k]+'\t'+c.vd[k]))
+    .join('\t')+'\t'+(c.temEnt?fmtPct(c.conv):'—');
+  const corpo=usados.map(m=>linha(m,celula(lojas,[m])));
+  const txt=[cab1,cab2].concat(corpo).concat([linha('TOTAL',celula(lojas,CANAIS))]).join('\n');
+  const id = alvo==='geral' ? 'recado-geral' : 'recado-loja-'+chave(alvo.split(':')[1]);
+  navigator.clipboard.writeText(txt).then(()=>recado(id,'Copiado'))
+    .catch(()=>recado(id,'Não deu para copiar','var(--alerta)'));
+}
+
+/* ============ leitura dos relatórios de mergulho ============ */
+/* uma linha por lead: loja em Empresa, canal em Midia, departamento no Vendedor */
+/* Este painel só separa as mídias por departamento: não existe descarte por
+   motivo de conclusão. Nos entrantes o lead sem vendedor entra em VN; nas
+   outras etapas ele fica de fora e é apenas avisado. */
+const FONTES=[
+  {k:'ent', rot:'Entrantes', arq:'Fluxo Total Dia', semVendedorVN:true},
+  {k:'ag',  rot:'Agendados', arq:'Cli. Agendados'},
+  {k:'cAg', rot:'Fluxo · comparecidos agendados', arq:'Comp. Agendado'},
+  {k:'cNao',rot:'Fluxo · comparecidos não agendados', arq:'Comp. Não Agendado'}];
+const fonteDe=k=>FONTES.find(f=>f.k===k)||FONTES[0];
+/* Regra fixa, sem exceções configuráveis:
+   [ VD ] e o Maurílio (sem prefixo) são venda direta, [ VN ] e [ GVN ] são
+   veículos novos. Qualquer outro caso — SEM VENDEDOR, célula vazia, nome sem
+   prefixo, marcação desconhecida — fica de fora e é apenas avisado na
+   importação. Não existe direcionamento: contabilizar esses casos distorce o
+   funil, porque a linha não pertence a nenhum departamento. */
+const VD_SEM_PREFIXO=['MAURILIO'];
+function departamento(cru){
+  const t=String(cru==null?'':cru).trim(), c=chave(t);
+  const m=t.match(/^\s*[\[\(]\s*([A-Za-zÀ-ú]+)\s*[\]\)]/);
+  if(m){
+    const tag=m[1].toUpperCase();
+    if(tag==='VD') return {dep:'vd',rot:'[ VD ]'};
+    if(tag==='VN'||tag==='GVN') return {dep:'vn',rot:'[ '+tag+' ]'};
+    return {dep:null,rot:'[ '+tag+' ]'};
+  }
+  if(!c) return {dep:null,rot:'(em branco)'};
+  if(VD_SEM_PREFIXO.some(n=>chave(n)&&c.indexOf(chave(n))>=0)) return {dep:'vd',rot:t};
+  return {dep:null,rot:c==='semvendedor'?'SEM VENDEDOR':t};
+}
+function separador(texto){
+  const p=texto.split(/\r?\n/)[0]||'';
+  const ps=(p.match(/;/g)||[]).length, pv=(p.match(/,/g)||[]).length, tab=(p.match(/\t/g)||[]).length;
+  if(tab>=ps&&tab>=pv&&tab>0) return '\t';
+  return ps>=pv?';':',';
+}
+function lerCSV(texto){
+  const sep=separador(texto), linhas=[]; let campo='', linha=[], dentro=false;
+  for(let i=0;i<texto.length;i++){
+    const c=texto[i];
+    if(dentro){ if(c==='"'){ if(texto[i+1]==='"'){ campo+='"'; i++; } else dentro=false; } else campo+=c; }
+    else if(c==='"') dentro=true;
+    else if(c===sep){ linha.push(campo); campo=''; }
+    else if(c==='\n'){ linha.push(campo); linhas.push(linha); linha=[]; campo=''; }
+    else if(c!=='\r') campo+=c;
+  }
+  if(campo!==''||linha.length){ linha.push(campo); linhas.push(linha); }
+  return linhas.filter(l=>l.some(x=>String(x).trim()!==''));
+}
+async function arquivoParaMatriz(f,erro){
+  const nome=f.name.toLowerCase();
+  if(nome.endsWith('.csv')||nome.endsWith('.txt')) return lerCSV(await f.text());
+  if(typeof XLSX==='undefined'){
+    erro('A biblioteca de leitura de Excel não carregou. Salve como CSV e anexe de novo.');
+    return null;
+  }
+  const wb=XLSX.read(new Uint8Array(await f.arrayBuffer()),{type:'array'});
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false,defval:null});
+}
+function acharCabecalho(matriz){
+  for(let i=0;i<Math.min(matriz.length,15);i++){
+    const l=matriz[i]||[];
+    if(l.some(c=>chave(c)==='midia') && l.some(c=>chave(c)==='vendedor')) return i;
+  }
+  return 0;
+}
+function ehMergulho(matriz){
+  const l=matriz[acharCabecalho(matriz)]||[];
+  return l.some(c=>chave(c)==='midia') && l.some(c=>chave(c)==='vendedor');
+}
+function colunasDe(cabecalhos){
+  const achar=alvos=>{
+    for(let i=0;i<cabecalhos.length;i++){ if(alvos.indexOf(chave(cabecalhos[i]))>=0) return i; }
+    return -1;
+  };
+  return {loja:achar(['empresa','loja']), midia:achar(['midia']),
+    vendedor:achar(['vendedor']), motivo:achar(['motivoconclusao'])};
+}
+async function receberArquivos(lista,fonte){
+  const alvo=document.getElementById('mapa-midia');
+  const erro=msg=>{ alvo.innerHTML='<div class="avisos"><h3>Não deu para ler</h3><ul><li>'+msg+'</li></ul></div>';
+    selo('arquivo','não consegui ler','ruim'); };
+  try{
+    const arquivos=Array.prototype.slice.call(lista);
+    const itens=[];
+    for(let i=0;i<arquivos.length;i++){
+      const f=arquivos[i];
+      const matriz=await arquivoParaMatriz(f,erro);
+      if(!matriz) return;
+      if(!matriz.length){ erro('O arquivo '+f.name+' está vazio.'); return; }
+      if(!ehMergulho(matriz)){ erro('O arquivo '+f.name+' não parece ser um relatório de mergulho: não achei as colunas <b>Midia</b> e <b>Vendedor</b>.'); return; }
+      const cab=acharCabecalho(matriz);
+      const cabecalhos=(matriz[cab]||[]).map(c=>String(c==null?'':c).trim());
+      itens.push({nome:f.name,fonte,matriz,cab,cabecalhos,colunas:colunasDe(cabecalhos)});
+    }
+    const antigos=(bruto&&bruto.itens?bruto.itens:[]).filter(x=>!itens.some(y=>y.nome===x.nome&&y.fonte===x.fonte));
+    bruto={itens:antigos.concat(itens)};
+    selo(fonte,arquivos.length+' arquivo(s)','ok');
+    selo('arquivo',bruto.itens.length+' arquivo(s) pronto(s)','ok');
+    desenharImportacao();
+  }catch(e){ erro('Falha ao processar: '+e.message); }
+}
+/* conta as linhas por loja, canal e departamento */
+function processarItem(it){
+  const cfg=fonteDe(it.fonte);
+  const res={}, resEnc={}, resVend={}, tipos={}, naoMapeados={}, naoRec={}, pendentes={};
+  let linhas=0, semLoja=0, semDep=0, semVendVN=0, excluidosEntDS=0;
+  const semVendedor=q=>q.rot==='SEM VENDEDOR'||q.rot==='(em branco)';
+  for(let i=it.cab+1;i<it.matriz.length;i++){
+    const l=it.matriz[i]; if(!l) continue;
+    if(!l.some(x=>String(x==null?'':x).trim()!=='')) continue;
+    linhas++;
+    const loja=acharLoja(l[it.colunas.loja]);
+    if(!loja){
+      const t=String(l[it.colunas.loja]==null?'':l[it.colunas.loja]).trim();
+      if(t) naoRec[t]=(naoRec[t]||0)+1; else semLoja++;
+      continue;
+    }
+    const cru=String(l[it.colunas.midia]==null?'':l[it.colunas.midia]).trim() || '(sem mídia)';
+    /* exclusão combinada: NOVOS WEB - DS não entra nos entrantes (vale nas outras etapas) */
+    if(it.fonte==='ent' && chave(cru)==='novoswebds'){ excluidosEntDS++; continue; }
+    tipos[cru]=(tipos[cru]||0)+1;
+    const canal=canalDe(cru);
+    if(canal===SEM_CLASSE) naoMapeados[cru]=(naoMapeados[cru]||0)+1;
+    const q=departamento(l[it.colunas.vendedor]);
+    const temPrefixo=!!q.dep;
+    let dep=q.dep;
+    if(!dep && cfg.semVendedorVN && semVendedor(q)){ dep='vn'; semVendVN++; }
+    if(!dep){
+      /* sem departamento a linha não entra: vira erro para você resolver */
+      pendentes[q.rot]=(pendentes[q.rot]||0)+1;
+      semDep++;
+      continue;
+    }
+    res[loja]=res[loja]||{};
+    res[loja][dep]=res[loja][dep]||{};
+    res[loja][dep][canal]=(res[loja][dep][canal]||0)+1;
+    /* encaminhados = linhas com prefixo válido no vendedor (exclui SEM VENDEDOR) */
+    if(temPrefixo){
+      resEnc[loja]=resEnc[loja]||{};
+      resEnc[loja][dep]=resEnc[loja][dep]||{};
+      resEnc[loja][dep][canal]=(resEnc[loja][dep][canal]||0)+1;
+      /* por vendedor: usa o nome cru como chave; a conta vai para o campo da etapa */
+      const nomeVend=String(l[it.colunas.vendedor]==null?'':l[it.colunas.vendedor]).trim();
+      if(nomeVend){
+        resVend[loja]=resVend[loja]||{};
+        resVend[loja][nomeVend]=resVend[loja][nomeVend]||{dep:dep};
+        resVend[loja][nomeVend][it.fonte]=(resVend[loja][nomeVend][it.fonte]||0)+1;
+        if(it.fonte==='ent') resVend[loja][nomeVend].enc=(resVend[loja][nomeVend].enc||0)+1;
+      }
+    }
+  }
+  const lojas=Object.keys(res);
+  return {res,resEnc,resVend,lojas,tipos,naoMapeados,naoRec,pendentes,semDep,semVendVN,linhas,semLoja,excluidosEntDS};
+}
+/* arquivo de uma loja só preserva as outras; arquivo do grupo zera quem não veio */
+function alvosDoArquivo(presentes){
+  const modo=estado.config.lojasFora||'auto';
+  if(modo==='zerar') return NOMES.slice();
+  if(modo==='manter') return presentes.slice();
+  return presentes.length>1 ? NOMES.slice() : presentes.slice();
+}
+function desenharImportacao(){
+  const alvo=document.getElementById('mapa-midia');
+  if(!bruto||!bruto.itens.length){ alvo.innerHTML=''; return; }
+  let g='';
+  const naoMapGeral={};
+  bruto.itens.forEach((it,idx)=>{
+    const cfg=fonteDe(it.fonte), r=processarItem(it);
+    Object.keys(r.naoMapeados).forEach(k=>naoMapGeral[k]=(naoMapGeral[k]||0)+r.naoMapeados[k]);
+    const total=(dep,canal)=>r.lojas.reduce((a,n)=>a+(((r.res[n]||{})[dep]||{})[canal]||0),0);
+    const usados=CANAIS.filter(m=>total('vn',m)||total('vd',m));
+    g+='<div class="caixa"><b>'+cfg.rot+'</b> · '+cfg.arq+' · '+it.nome+' · '+r.linhas+' linhas · cabeçalho na linha '+(it.cab+1)+
+       '<br><b>Fecha assim:</b> '+fmtNum(r.linhas)+' linhas = '+fmtNum(r.linhas-r.semDep-r.semLoja-r.excluidosEntDS)+' contadas'+
+       (r.semDep?' + '+fmtNum(r.semDep)+' sem departamento':'')+
+       (r.semLoja?' + '+fmtNum(r.semLoja)+' sem loja':'')+
+       (r.excluidosEntDS?' + '+fmtNum(r.excluidosEntDS)+' NOVOS WEB - DS excluídas':'')+
+       (r.semVendVN?'<br><b>'+fmtNum(r.semVendVN)+'</b> linha(s) sem vendedor entraram em <b>VN</b>, como combinado para os entrantes.':'')+
+       (r.excluidosEntDS?'<br><b>'+fmtNum(r.excluidosEntDS)+'</b> linha(s) de <b>NOVOS WEB - DS</b> ficaram fora dos entrantes (regra fixa; nas outras etapas conta normalmente).':'')+
+       '<br><b>Lojas no arquivo:</b> '+(r.lojas.length?r.lojas.join(' · '):'nenhuma')+
+       (function(){
+         const zeradas=alvosDoArquivo(r.lojas).filter(n=>r.lojas.indexOf(n)<0);
+         return zeradas.length?'<br><span class="aten">Tratado como exportação do grupo: '+zeradas.join(' · ')+' vão a zero nesta etapa.</span>':'';
+       })()+
+       (Object.keys(r.naoRec).length?'<br><span class="ruim">Loja não reconhecida: '+Object.keys(r.naoRec).join(' · ')+'</span>':'')+
+       '</div>';
+    let corpo='';
+    usados.forEach(m=>{
+      corpo+='<tr><th>'+m+'</th><td>'+fmtNum(total('vn',m))+'</td><td>'+fmtNum(total('vd',m))+'</td>'+
+        '<td class="forte">'+fmtNum(total('vn',m)+total('vd',m))+'</td></tr>';
+    });
+    const tvn=usados.reduce((a,m)=>a+total('vn',m),0), tvd=usados.reduce((a,m)=>a+total('vd',m),0);
+    g+='<div class="rolagem" style="margin-top:12px"><table><thead><tr><th>Canal</th><th>VN</th><th>VDA</th><th>Total</th></tr></thead>'+
+       '<tbody>'+corpo+'</tbody><tfoot><tr><th>Total do arquivo</th><td>'+fmtNum(tvn)+'</td><td>'+fmtNum(tvd)+'</td>'+
+       '<td>'+fmtNum(tvn+tvd)+'</td></tr></tfoot></table></div>';
+    g+='<div class="caixa"><b>Tipos de mídia lidos:</b> '+Object.keys(r.tipos).map(t=>t+' ('+r.tipos[t]+')').join(' · ')+'</div>';
+    const pend=Object.keys(r.pendentes).sort((a,b)=>r.pendentes[b]-r.pendentes[a]);
+    if(pend.length){
+      g+='<div class="avisos"><h3>'+fmtNum(r.semDep)+' linha(s) sem departamento — ficam fora da conta</h3>'+
+        '<ul>'+pend.map(p=>'<li><b>'+p+'</b> · '+fmtNum(r.pendentes[p])+' linha(s)</li>').join('')+'</ul>'+
+        '<p class="dica" style="margin:8px 0 0">O vendedor não tem <code>[ VN ]</code> nem <code>[ VD ]</code> na frente do nome, '+
+        'então a linha não pertence a nenhum departamento e não pode ser contada. Corrija na planilha de origem e anexe de novo.'+
+'</p>'+
+        '</div>';
+    }
+  });
+  const nm=Object.keys(naoMapGeral);
+  if(nm.length) g+='<div class="caixa"><span class="aten">Tipo de mídia fora do mapa, caindo em <b>'+SEM_CLASSE+
+    '</b>: '+nm.join(' · ')+'. Classifique no bloco abaixo e a leitura se ajusta.</span></div>';
+  g+='<div class="barra"><button class="acao principal" id="btn-aplicar">Aplicar no painel</button>'+
+     '<button class="acao miudo" id="btn-descartar">Descartar</button>'+
+     '<span class="recado" id="recado-arquivo">Aplicado</span></div>';
+  alvo.innerHTML=g;
+
+  alvo.querySelectorAll('[data-imp]').forEach(el=>{
+    el.addEventListener('change',async()=>{
+      const it=bruto.itens[+el.dataset.i];
+      if(el.dataset.imp==='motivos'){
+        estado.config.filtros=estado.config.filtros||{};
+        estado.config.filtros[it.fonte]=el.value==='1';
+      }else if(el.dataset.imp==='lista'){
+        estado.config.motivosFora=el.value.split(';').map(s=>s.trim()).filter(Boolean);
+      }
+      await guardar('config',estado.config);
+      desenharImportacao();
+    });
+  });
+  document.getElementById('btn-aplicar').addEventListener('click',aplicar);
+  document.getElementById('btn-descartar').addEventListener('click',()=>{
+    bruto=null; desenharImportacao();
+    selo('arquivo','nenhum arquivo carregado');
+    FONTES.forEach(f=>selo(f.k,'nenhum arquivo'));
+  });
+}
+async function aplicar(){
+  if(!bruto) return;
+  const fora=bruto.itens.reduce((a,it)=>a+processarItem(it).semDep,0);
+  if(fora && !confirm(fmtNum(fora)+' linha(s) ficam fora porque o vendedor não tem departamento. '+
+    'Aplicar assim mesmo? Você pode direcionar cada caso acima, ou corrigir a planilha e anexar de novo.')) return;
+  bruto.itens.forEach(it=>{
+    const cfg=fonteDe(it.fonte), r=processarItem(it);
+    const alvos=alvosDoArquivo(r.lojas);
+    alvos.forEach(n=>DEPS.forEach(d=>CANAIS.forEach(m=>{
+      estado.dados[n][d.k][m][it.fonte]=(((r.res[n]||{})[d.k]||{})[m])||0;
+      /* o relatório de entrantes também alimenta encaminhados (sem SEM VENDEDOR) */
+      if(it.fonte==='ent'){
+        estado.dados[n][d.k][m].enc=(((r.resEnc[n]||{})[d.k]||{})[m])||0;
+      }
+    })));
+    /* vendedores: zera o campo desta fonte em todas as lojas-alvo e aplica o novo
+       (vendedor que sumiu desta importação volta a zero naquela etapa) */
+    estado.vendedores=estado.vendedores||{};
+    alvos.forEach(n=>{
+      estado.vendedores[n]=estado.vendedores[n]||{};
+      Object.keys(estado.vendedores[n]).forEach(v=>{
+        estado.vendedores[n][v][it.fonte]=0;
+        if(it.fonte==='ent') estado.vendedores[n][v].enc=0;
+      });
+      Object.keys(r.resVend[n]||{}).forEach(v=>{
+        const novo=r.resVend[n][v];
+        estado.vendedores[n][v]=estado.vendedores[n][v]||{dep:novo.dep};
+        estado.vendedores[n][v].dep=novo.dep;
+        estado.vendedores[n][v][it.fonte]=novo[it.fonte]||0;
+        if(it.fonte==='ent') estado.vendedores[n][v].enc=novo.enc||0;
+      });
+    });
+    estado.fontes[it.fonte]={arquivo:it.nome,quando:new Date().toISOString(),
+      linhas:r.linhas,lojas:alvos,etapa:cfg.rot};
+    const t=dep=>alvos.reduce((a,n)=>a+CANAIS.reduce((b,m)=>b+((((r.res[n]||{})[dep]||{})[m])||0),0),0);
+    historico.push({quando:new Date().toISOString(),arquivo:it.nome,
+      resumo:cfg.rot+' · VN '+fmtNum(t('vn'))+' · VDA '+fmtNum(t('vd'))+
+        (r.semVendVN?' · '+r.semVendVN+' sem vendedor em VN':'')+
+        (r.semDep?' · '+r.semDep+' sem departamento':'')+' · '+alvos.length+' loja(s)'});
+  });
+  await salvarTudo();
+  atualizar();
+  desenharImportacao();
+  recado('recado-arquivo','Aplicado');
+}
+
+/* ============ planilha de vendas do Google Sheets ============ */
+/* Blocos por loja, uma aba por mês. Só entram as linhas cuja DATA DA VENDA cai
+   dentro do mês da aba, e faturado é a venda do mês que já tem NF preenchida.
+   O departamento (VN/VDA) sai do PREFIXO DO VENDEDOR, mesma regra dos mergulhos:
+   [ VN ] e [ GVN ] em VN; [ VD ] e Maurílio (sem prefixo) em VDA. Linha sem
+   prefixo identificável fica de fora e é apenas avisada. */
+const MESES_NOME=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+/* mês e ano a partir do nome da aba: SETEMBRO2026, AGOSTO26 */
+function mesDaAba(nome){
+  const c=chave(nome);
+  let mes=-1;
+  MESES_NOME.forEach((m,i)=>{ if(c.indexOf(chave(m))>=0) mes=i+1; });
+  if(mes<0) return null;
+  const a=c.match(/(\d{2,4})$/);
+  if(!a) return null;
+  let ano=+a[1]; if(ano<100) ano+=2000;
+  return {mes,ano};
+}
+function dataDaVenda(v){
+  if(v==null||v==='') return null;
+  if(v instanceof Date && !isNaN(v)) return {ano:v.getFullYear(),mes:v.getMonth()+1};
+  if(typeof v==='number' && isFinite(v) && v>20000 && v<80000){
+    const d=new Date(Date.UTC(1899,11,30)+v*86400000);
+    return {ano:d.getUTCFullYear(),mes:d.getUTCMonth()+1};
+  }
+  const s=String(v).trim();
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return {ano:+m[1],mes:+m[2]};
+  m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if(m){
+    let ano=+m[3]; if(ano<100) ano+=2000;
+    const p=+m[1], q=+m[2];
+    return {ano:ano, mes:(p>12?q:q)};
+  }
+  return null;
+}
+function linhasTitulo(matriz){
+  const t=[];
+  (matriz||[]).forEach((l,i)=>{ if(l&&l.some(c=>chave(c)==='datadavenda')) t.push(i); });
+  return t;
+}
+function ehPlanilhaVendas(matriz){
+  const t=linhasTitulo(matriz);
+  if(!t.length) return false;
+  const l=matriz[t[0]]||[];
+  return l.some(c=>chave(c)==='midia') && l.some(c=>chave(c)==='nf');
+}
+/* Regra atual: na aba selecionada, TODA linha preenchida (tem data, cliente ou vendedor)
+   conta como VENDA; FATURADO só quando a coluna NF tem um NÚMERO (texto como "FATURADO",
+   "Falta doc" etc. não conta). O mês da aba só é informativo. */
+function nfNumerico(v){
+  if(v==null) return false;
+  if(typeof v==='number' && isFinite(v) && v>0) return true;
+  const s=String(v).replace(/[.\s,]/g,'').trim();
+  if(!s) return false;
+  return /^\d{4,}$/.test(s);  /* NF real tem no mínimo 4 dígitos */
+}
+function linhaTemDado(l,cData,cCliente,cVend){
+  const temAlgo=i=>i>=0 && l[i]!=null && String(l[i]).trim()!=='';
+  return temAlgo(cData)||temAlgo(cCliente)||temAlgo(cVend);
+}
+function processarVendas(it){
+  const alvo=mesDaAba(it.aba)||{mes:0,ano:0};
+  const titulos=linhasTitulo(it.matriz);
+  const res={}, resVend={}, tipos={}, naoMapeados={}, naoRec={}, pendentes={}, lojasVistas=[], blocoSemLoja={};
+  let linhas=0, semDep=0, semLoja=0, faturados=0, semNF=0, nfTexto=0;
+  titulos.forEach((ini,j)=>{
+    const fim = j+1<titulos.length ? titulos[j+1] : it.matriz.length;
+    const cab=it.matriz[ini]||[];
+    const idx=alvos=>{ for(let i=0;i<cab.length;i++){ if(alvos.indexOf(chave(cab[i]))>=0) return i; } return -1; };
+    const cLoja=idx(['loja','empresa']), cData=idx(['datadavenda']), cNF=idx(['nf']),
+          cMidia=idx(['midia']), cVend=idx(['vendedor']), cCliente=idx(['cliente']),
+          cDep=idx(['departamento','dep']);
+    /* abas antigas não têm coluna LOJA: nelas o nome está no título do bloco */
+    let lojaDoBloco=null;
+    if(cLoja<0){
+      for(let i=0;i<cab.length;i++){
+        const t=String(cab[i]==null?'':cab[i]).trim();
+        if(!t||chave(t)==='datadavenda') continue;
+        const achou=acharLoja(t);
+        if(achou){ lojaDoBloco=achou; break; }
+        if(!blocoSemLoja[t] && chave(t).length>2 && ['nf','midia','evento','cliente','telefone','modelo','vendedor','status','departamento','pfpj','consultores'].indexOf(chave(t))<0)
+          blocoSemLoja[t]=0;
+      }
+    }
+    for(let i=ini+1;i<fim;i++){
+      const l=it.matriz[i]; if(!l) continue;
+      if(!linhaTemDado(l,cData,cCliente,cVend)) continue;
+      linhas++;
+      /* NF só conta se vier como número de verdade (pode vir numérico ou string "12345678") */
+      const nfRaw=cNF>=0?l[cNF]:null;
+      const temNFnum=nfNumerico(nfRaw);
+      if(!temNFnum){
+        const s=String(nfRaw==null?'':nfRaw).trim();
+        if(s) nfTexto++; else semNF++;
+      }
+      /* loja: coluna LOJA (uma por linha) ou cabeçalho do bloco */
+      const cruLoja=cLoja>=0?l[cLoja]:'';
+      const loja=cLoja>=0?acharLoja(cruLoja):lojaDoBloco;
+      if(!loja){
+        const t=cLoja>=0?String(cruLoja==null?'':cruLoja).trim():'';
+        if(t) naoRec[t]=(naoRec[t]||0)+1;
+        else if(cLoja<0){ Object.keys(blocoSemLoja).forEach(k=>blocoSemLoja[k]++); semLoja++; }
+        else semLoja++;
+        continue;
+      }
+      if(lojasVistas.indexOf(loja)<0) lojasVistas.push(loja);
+      const cru=String(l[cMidia]==null?'':l[cMidia]).trim() || 'SEM MIDIA';
+      tipos[cru]=(tipos[cru]||0)+1;
+      const canal=canalDe(cru);
+      if(canal===SEM_CLASSE) naoMapeados[cru]=(naoMapeados[cru]||0)+1;
+      /* departamento: 1º a coluna DEPARTAMENTO quando existir (planilha nova),
+         2º o prefixo do VENDEDOR (planilha antiga) */
+      let depKey=null, rotPend='';
+      if(cDep>=0){
+        const d=chave(l[cDep]);
+        if(d==='vn'||d==='gvn') depKey='vn';
+        else if(d==='vd'||d==='vda') depKey='vd';
+        else rotPend=String(l[cDep]==null?'':l[cDep]).trim()||'(DEPARTAMENTO em branco)';
+      }
+      if(!depKey){
+        const q=departamento(cVend>=0?l[cVend]:'');
+        if(q.dep) depKey=q.dep;
+        else rotPend=rotPend||q.rot;
+      }
+      if(!depKey){ pendentes[rotPend]=(pendentes[rotPend]||0)+1; semDep++; continue; }
+      res[loja]=res[loja]||{};
+      res[loja][depKey]=res[loja][depKey]||{};
+      res[loja][depKey][canal]=res[loja][depKey][canal]||{vd:0,ft:0};
+      /* toda linha preenchida vira venda; NF numérica adiciona faturado */
+      res[loja][depKey][canal].vd++;
+      if(temNFnum){ res[loja][depKey][canal].ft++; faturados++; }
+      /* por vendedor */
+      const nomeVend=String(cVend>=0?l[cVend]:'').trim();
+      if(nomeVend){
+        resVend[loja]=resVend[loja]||{};
+        resVend[loja][nomeVend]=resVend[loja][nomeVend]||{dep:depKey,vd:0,ft:0};
+        resVend[loja][nomeVend].dep=depKey;
+        resVend[loja][nomeVend].vd++;
+        if(temNFnum) resVend[loja][nomeVend].ft++;
+      }
+    }
+  });
+  Object.keys(blocoSemLoja).forEach(k=>{ if(blocoSemLoja[k]) naoRec[k]=(naoRec[k]||0)+blocoSemLoja[k]; });
+  return {res,resVend,lojas:lojasVistas,tipos,naoMapeados,naoRec,pendentes,
+    linhas,semDep,semLoja,faturados,semNF,nfTexto,alvo};
+}
+
+/* ============ vendas pelo Google Sheets ============ */
+function urlCSV(link,aba){
+  const l=(link||'').trim();
+  if(!l) throw new Error('Cole o link da planilha.');
+  if(/\/pub/.test(l)) return l+(l.indexOf('output=csv')>=0?'':(l.indexOf('?')>=0?'&':'?')+'output=csv');
+  const id=(l.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)||[])[1];
+  if(!id) throw new Error('Não reconheci o endereço. Use o link que o Google gera em Compartilhar.');
+  const base='https://docs.google.com/spreadsheets/d/'+id;
+  const nome=(aba||'').trim();
+  if(nome) return base+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(nome);
+  const gid=(l.match(/[#&?]gid=(\d+)/)||[])[1];
+  return gid ? base+'/export?format=csv&gid='+gid : base+'/gviz/tq?tqx=out:csv';
+}
+function caixaGoogle(html,classe){
+  const el=document.getElementById('caixa-google');
+  el.innerHTML = classe ? '<span class="'+classe+'">'+html+'</span>' : html;
+}
+async function lerVendasGoogle(){
+  const link=document.getElementById('link-vendas').value.trim();
+  const aba=document.getElementById('aba-google').value.trim();
+  estado.config.linkVendas=link; estado.config.abaVendas=aba;
+  await guardar('config',estado.config);
+  try{
+    selo('google','lendo a planilha…');
+    const r=await fetch(urlCSV(link,aba),{redirect:'follow'});
+    if(!r.ok) throw new Error('o Google respondeu '+r.status+'. Confira se a planilha está aberta para leitura.');
+    const texto=await r.text();
+    if(/^\s*</.test(texto)) throw new Error('veio uma página de login em vez dos dados. Deixe a planilha como "qualquer pessoa com o link".');
+    const matriz=lerCSV(texto);
+    if(!ehPlanilhaVendas(matriz)) throw new Error('não achei as colunas LOJA, DATA DA VENDA, NF e MÍDIA nessa aba.');
+    const it={nome:'planilha do Google',fonte:'vd',aba:aba||'aba única',matriz,cab:0,colunas:{}};
+    const r2=processarVendas(it);
+    /* aplica direto: sobrescreve vendas (vd) e faturados (ft) das lojas que apareceram,
+       preservando lojas travadas por lançamento manual */
+    r2.lojas.forEach(n=>DEPS.forEach(d=>CANAIS.forEach(m=>{
+      if((estado.manualVd||{})[n+'|'+d.k]) return;
+      const c=((r2.res[n]||{})[d.k]||{})[m]||{vd:0,ft:0};
+      estado.dados[n][d.k][m].vd=c.vd||0;
+      estado.dados[n][d.k][m].ft=c.ft||0;
+    })));
+    /* vendedores: zera vd/ft dos vendedores das lojas que apareceram, depois aplica */
+    estado.vendedores=estado.vendedores||{};
+    r2.lojas.forEach(n=>{
+      estado.vendedores[n]=estado.vendedores[n]||{};
+      Object.keys(estado.vendedores[n]).forEach(v=>{
+        estado.vendedores[n][v].vd=0;
+        estado.vendedores[n][v].ft=0;
+      });
+      Object.keys(r2.resVend[n]||{}).forEach(v=>{
+        const novo=r2.resVend[n][v];
+        estado.vendedores[n][v]=estado.vendedores[n][v]||{dep:novo.dep};
+        estado.vendedores[n][v].dep=novo.dep;
+        estado.vendedores[n][v].vd=novo.vd||0;
+        estado.vendedores[n][v].ft=novo.ft||0;
+      });
+    });
+    estado.fontes.vd={arquivo:'Google Sheets · '+(aba||'aba única'),quando:new Date().toISOString(),
+      linhas:r2.linhas,lojas:r2.lojas,etapa:'Vendas'};
+    historico.push({quando:new Date().toISOString(),arquivo:'Google Sheets · '+(aba||'aba única'),
+      resumo:'Vendas · '+fmtNum(r2.linhas)+' linha(s) · '+fmtNum(r2.faturados)+' faturado(s) · '+r2.lojas.length+' loja(s)'+
+        (r2.semDep?' · '+r2.semDep+' sem departamento':'')+(r2.semLoja?' · '+r2.semLoja+' sem loja':'')});
+    await salvarTudo();
+    atualizar();
+    if(registrarTiposVendas(it)){ await guardar('config',estado.config); desenharMapaMidias(); }
+    selo('google','planilha lida · '+fmtNum(r2.linhas)+' linha(s)','ok');
+    const vendasContadas=r2.linhas-r2.semDep-r2.semLoja;
+    let msg='Lidas <b>'+fmtNum(r2.linhas)+'</b> linhas na aba. '+
+      '<b>'+fmtNum(vendasContadas)+'</b> contadas como venda · '+
+      '<b>'+fmtNum(r2.faturados)+'</b> faturado(s) (NF com número)'+
+      (r2.nfTexto?' · '+fmtNum(r2.nfTexto)+' com NF em texto (ex.: FATURADO, Falta doc) — não entraram em faturados':'')+
+      (r2.semNF?' · '+fmtNum(r2.semNF)+' sem NF':'')+
+      (r2.semDep?' · '+fmtNum(r2.semDep)+' sem departamento (fora da conta)':'')+
+      (r2.semLoja?' · '+fmtNum(r2.semLoja)+' sem loja (fora da conta)':'')+
+      '<br><b>Lojas:</b> '+(r2.lojas.length?r2.lojas.join(' · '):'nenhuma');
+    if(Object.keys(r2.pendentes).length){
+      msg+='<br><span class="ruim"><b>Sem departamento</b> (vendedor sem prefixo [ VN ]/[ VD ]): '+
+        Object.keys(r2.pendentes).sort((a,b)=>r2.pendentes[b]-r2.pendentes[a])
+          .map(p=>p+' ('+fmtNum(r2.pendentes[p])+')').join(' · ')+
+        '. Corrija na planilha e leia de novo.</span>';
+    }
+    if(Object.keys(r2.naoRec).length){
+      msg+='<br><span class="ruim">Loja não reconhecida: '+Object.keys(r2.naoRec).join(' · ')+'</span>';
+    }
+    caixaGoogle(msg,'ok');
+    recado('recado-google','Planilha lida');
+  }catch(e){
+    selo('google','não consegui ler','ruim');
+    caixaGoogle('Não deu para ler: '+e.message+
+      '<br>Se a mensagem falar de rede ou CORS, o navegador bloqueou por o painel estar aberto como arquivo local. '+
+      'Nesse caso hospede o painel ou use o lançamento manual.','ruim');
+    recado('recado-google','Falhou','var(--alerta)');
+  }
+}
+function registrarTiposVendas(it){
+  const titulos=linhasTitulo(it.matriz);
+  let novo=false;
+  titulos.forEach((ini,j)=>{
+    const fim = j+1<titulos.length ? titulos[j+1] : it.matriz.length;
+    const cab=it.matriz[ini]||[];
+    let cMidia=-1;
+    for(let i=0;i<cab.length;i++){ if(chave(cab[i])==='midia'){ cMidia=i; break; } }
+    if(cMidia<0) return;
+    for(let i=ini+1;i<fim;i++){
+      const l=it.matriz[i]; if(!l) continue;
+      const cru=String(l[cMidia]==null?'':l[cMidia]).trim() || '(sem mídia)';
+      const c=chave(cru);
+      if(!c) continue;
+      if(!(c in estado.config.mapaMidia)){
+        estado.config.mapaMidia[c]=SEM_CLASSE;
+        estado.config.rotulosMidia[c]=cru;
+        novo=true;
+      }
+    }
+  });
+  return novo;
+}
+
+/* ============ backup no Google Drive ============ */
+function caixaDrive(html,classe){
+  const el=document.getElementById('caixa-drive');
+  el.innerHTML = classe ? '<span class="'+classe+'">'+html+'</span>' : html;
+}
+function pacoteBackup(){
+  return {versao:4,painel:'midia-renault',gerado:new Date().toISOString(),
+    config:estado.config,dados:estado.dados,vendedores:estado.vendedores||{},
+    manualVd:estado.manualVd,fontes:estado.fontes,historico};
+}
+async function aplicarPacote(o){
+  if(!o||!o.dados) throw new Error('backup sem dados');
+  estado.config=Object.assign({},PADRAO.config,o.config||{});
+  delete estado.config.destinoVendedor;
+  delete estado.config.filtros; delete estado.config.motivosFora;
+  if(!estado.config.filtroVendedor) estado.config.filtroVendedor={dep:'',praca:'',loja:''};
+  if(!estado.config.ordem) estado.config.ordem=JSON.parse(JSON.stringify(ORDEM_PADRAO));
+  ['lojaVN','lojaVD','vendedor','canais'].forEach(k=>{
+    if(!estado.config.ordem[k]) estado.config.ordem[k]={campo:'',dir:''};
+  });
+  estado.dados=normalizar(o.dados);
+  estado.vendedores=(o.vendedores&&typeof o.vendedores==='object')?o.vendedores:{};
+  estado.manualVd=(o.manualVd&&typeof o.manualVd==='object')?o.manualVd:{};
+  estado.fontes=o.fontes||{};
+  historico=Array.isArray(o.historico)?o.historico:[];
+  await salvarTudo(true);
+  atualizadoEm=o.gerado||new Date().toISOString();
+  await guardar('atualizado',atualizadoEm);
+  montarAjustes(); atualizar();
+}
+async function subirDrive(){
+  const url=(estado.config.urlDrive||'').trim();
+  if(!url){ caixaDrive('Cole o endereço do app de backup primeiro.','ruim'); return; }
+  try{
+    selo('drive','enviando…');
+    /* text/plain evita o preflight, que o Apps Script não responde */
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({acao:'salvar',pacote:pacoteBackup()})});
+    const o=await r.json();
+    if(!o.ok) throw new Error(o.erro||'o app recusou o envio');
+    estado.config.driveEm=new Date().toISOString();
+    await guardar('config',estado.config);
+    selo('drive','último envio '+dataBR(estado.config.driveEm),'ok');
+    caixaDrive('Backup enviado como <b>'+o.arquivo+'</b>.'+(o.apagados?' '+o.apagados+' backup(s) antigo(s) removido(s).':''),'ok');
+    recado('recado-drive','Enviado');
+  }catch(e){
+    selo('drive','falhou','ruim');
+    caixaDrive('Não deu para enviar: '+e.message+'<br>Confira se o app foi publicado com acesso para <b>qualquer pessoa</b>.','ruim');
+  }
+}
+async function baixarDrive(silencioso){
+  const url=(estado.config.urlDrive||'').trim();
+  if(!url){ if(!silencioso) caixaDrive('Cole o endereço do app de backup primeiro.','ruim'); return; }
+  try{
+    if(!silencioso) selo('drive','buscando…');
+    const r=await fetch(url+(url.indexOf('?')>=0?'&':'?')+'acao=ultimo',{redirect:'follow'});
+    const o=await r.json();
+    if(!o.ok) throw new Error(o.erro||'nada encontrado na pasta');
+    if(!silencioso && !confirm('Carregar o backup de '+dataBR(o.quando)+'? O que está neste navegador é substituído.')) return;
+    await aplicarPacote(o.pacote||o.conteudo);
+    selo('drive','carregado de '+dataBR(o.quando),'ok');
+    caixaDrive('Painel carregado a partir de <b>'+o.arquivo+'</b>, de '+dataBR(o.quando)+'.','ok');
+    recado('recado-drive','Carregado');
+  }catch(e){
+    if(silencioso) return;
+    selo('drive','falhou','ruim');
+    caixaDrive('Não deu para carregar: '+e.message,'ruim');
+  }
+}
+async function testarDrive(){
+  const url=(estado.config.urlDrive||'').trim();
+  if(!url){ caixaDrive('Cole o endereço do app de backup primeiro.','ruim'); return; }
+  try{
+    const r=await fetch(url+(url.indexOf('?')>=0?'&':'?')+'acao=teste',{redirect:'follow'});
+    const o=await r.json();
+    caixaDrive(o.ok?('Conexão certa. Pasta <b>'+(o.pasta||'?')+'</b> com <b>'+fmtNum(o.arquivos||0)+'</b> backup(s).')
+      :('O app respondeu, mas com erro: '+(o.erro||'')),o.ok?'ok':'ruim');
+  }catch(e){
+    caixaDrive('Não consegui falar com o app: '+e.message+
+      '<br>Causas comuns: o app não foi publicado como <b>qualquer pessoa</b>, ou o navegador bloqueou por o painel estar aberto como arquivo local.','ruim');
+  }
+}
+
+/* ============ lançamento manual das vendas ============ */
+let lojaManual=null;
+function desenharManual(){
+  const sel=document.getElementById('sel-loja-manual');
+  if(!lojaManual) lojaManual=(lojasComDado()[0]||NOMES[0]);
+  sel.innerHTML=NOMES.map(n=>'<option value="'+n+'"'+(lojaManual===n?' selected':'')+'>'+
+    n+(temDado([n])?'':' (sem relatório)')+'</option>').join('');
+  const n=lojaManual;
+  let c='';
+  CANAIS.forEach(m=>{
+    const vn=+(((estado.dados[n]||{}).vn||{})[m]||{}).vd||0;
+    const vd=+(((estado.dados[n]||{}).vd||{})[m]||{}).vd||0;
+    const ent=celula([n],[m]).total.ent;
+    c+='<tr><th>'+m+'</th>'+
+      '<td><input type="number" min="0" step="1" data-dep="vn" data-canal="'+m+'" value="'+vn+'"></td>'+
+      '<td><input type="number" min="0" step="1" data-dep="vd" data-canal="'+m+'" value="'+vd+'"></td>'+
+      '<td class="forte">'+fmtNum(vn+vd)+'</td>'+
+      '<td class="'+(ent?'':'zero')+'">'+fmtNum(ent)+'</td>'+
+      '<td class="conv">'+(ent?fmtPct(pct(vn+vd,ent)):'—')+'</td></tr>';
+  });
+  const g=celula([n],CANAIS);
+  document.getElementById('tabela-manual').innerHTML=
+    '<table class="editavel"><thead><tr><th class="canal">Canal</th><th>Venda VN</th><th>Venda VDA</th>'+
+    '<th>Total</th><th>Entrantes</th><th class="pctcol">%conv.</th></tr></thead>'+
+    '<tbody>'+c+'</tbody>'+
+    '<tfoot><tr><th>Total</th><td>'+fmtNum(g.vn.vd)+'</td><td>'+fmtNum(g.vd.vd)+'</td>'+
+    '<td>'+fmtNum(g.total.vd)+'</td><td>'+fmtNum(g.total.ent)+'</td><td>'+
+    (g.temEnt?fmtPct(g.conv):'—')+'</td></tr></tfoot></table>';
+  document.querySelectorAll('#tabela-manual input').forEach(inp=>{
+    inp.addEventListener('change',async()=>{
+      const v=Math.max(0,Math.round(+inp.value||0));
+      inp.value=v;
+      estado.dados[lojaManual][inp.dataset.dep][inp.dataset.canal].vd=v;
+      estado.manualVd=estado.manualVd||{};
+      estado.manualVd[lojaManual+'|'+inp.dataset.dep]=true;
+      inp.classList.add('editado');
+      await salvarTudo();
+      atualizar();
+      recado('recado-manual','Salvo');
+    });
+  });
+  const marcas=DEPS.filter(d=>(estado.manualVd||{})[lojaManual+'|'+d.k]).map(d=>d.rot);
+  document.getElementById('caixa-manual').innerHTML = marcas.length
+    ? '<span class="ok">Vendas de <b>'+marcas.join(' e ')+'</b> em '+lojaManual+' já foram lançadas à mão.</span> '+
+      'Os relatórios de mergulho cuidam de entrantes, agendados e fluxo, e não mexem nestas vendas.'
+    : 'Nada lançado à mão em '+lojaManual+'. Os relatórios não trazem venda por mídia, então ela é digitada aqui.';
+  document.getElementById('selo-manual').textContent=
+    Object.keys(estado.manualVd||{}).length+' combinação(ões) no manual';
+}
+
+/* ============ mapa de mídias ============ */
+function desenharMapaMidias(){
+  const mapa=estado.config.mapaMidia||{}, rot=estado.config.rotulosMidia||{};
+  const chaves=Object.keys(mapa).sort((a,b)=>String(rot[a]||a).localeCompare(String(rot[b]||b),'pt-BR'));
+  let c='';
+  chaves.forEach(k=>{
+    const atual=CANAIS.indexOf(mapa[k])>=0?mapa[k]:(CANAL_ANTIGO[mapa[k]]||SEM_CLASSE);
+    c+='<tr><th>'+(rot[k]||k)+'</th><td><select data-desc="'+k+'">'+
+      CANAIS.map(m=>'<option value="'+m+'"'+(atual===m?' selected':'')+'>'+m+'</option>').join('')+
+      '</select></td></tr>';
+  });
+  document.getElementById('tabela-mapa').innerHTML=
+    '<table><thead><tr><th>Tipo da mídia</th><th>Canal</th></tr></thead><tbody>'+c+'</tbody></table>';
+  document.querySelectorAll('[data-desc]').forEach(el=>el.addEventListener('change',async()=>{
+    estado.config.mapaMidia[el.dataset.desc]=el.value;
+    await guardar('config',estado.config);
+    if(bruto) desenharImportacao();
+    desenharMapaMidias();
+    recado('recado-mapa','Salvo · reimporte para reagrupar o que já está no painel');
+  }));
+  const semC=chaves.filter(k=>canalDe(rot[k]||k)===SEM_CLASSE).length;
+  document.getElementById('selo-mapa').textContent=chaves.length+' tipos'+(semC?' · '+semC+' em OUTROS':'');
+}
+function registrarTipos(){
+  if(!bruto) return false;
+  let novo=false;
+  bruto.itens.forEach(it=>{
+    for(let i=it.cab+1;i<it.matriz.length;i++){
+      const l=it.matriz[i]; if(!l) continue;
+      const cru=String(l[it.colunas.midia]==null?'':l[it.colunas.midia]).trim() || '(sem mídia)';
+      const c=chave(cru);
+      if(!c) continue;
+      if(!(c in estado.config.mapaMidia)){
+        estado.config.mapaMidia[c]=SEM_CLASSE;
+        estado.config.rotulosMidia[c]=cru;
+        novo=true;
+      }
+    }
+  });
+  return novo;
+}
+
+/* ============ cobertura e histórico ============ */
+function desenharCobertura(){
+  let c='';
+  FONTES.forEach(f=>{
+    const fo=estado.fontes[f.k];
+    const t=NOMES.reduce((a,n)=>a+CANAIS.reduce((b,m)=>
+      b+DEPS.reduce((s,d)=>s+(+((((estado.dados[n]||{})[d.k]||{})[m])||{})[f.k]||0),0),0),0);
+    c+='<tr><th>'+f.rot+'</th><td class="'+(fo?'':'zero')+'">'+(fo?fmtNum(t)+' linhas · '+dataBR(fo.quando):'—')+'</td>'+
+      '<td>'+(fo&&fo.lojas?fo.lojas.length+' loja(s)':'—')+'</td>'+
+      '<td>'+(fo?fo.arquivo:'—')+'</td></tr>';
+  });
+  const manual=Object.keys(estado.manualVd||{}).length;
+  c+='<tr><th>Vendas · lançamento manual</th><td class="'+(manual?'':'zero')+'">'+
+    (manual?manual+' combinação(ões) loja × departamento':'—')+'</td><td>—</td><td>aba Lançar à mão</td></tr>';
+  document.getElementById('tabela-cobertura').innerHTML=
+    '<table><thead><tr><th>Etapa</th><th>Situação</th><th>Lojas</th><th>Arquivo</th></tr></thead><tbody>'+c+'</tbody></table>';
+  document.getElementById('selo-composicao').textContent=
+    FONTES.filter(f=>estado.fontes[f.k]).length+' de '+FONTES.length+' etapas lidas';
+}
+function desenharHistorico(){
+  const el=document.getElementById('historico');
+  if(!historico.length){ el.innerHTML='<div><span>Nenhuma importação registrada ainda.</span></div>'; return; }
+  el.innerHTML=historico.slice().reverse().slice(0,60).map(h=>
+    '<div><b>'+dataBR(h.quando)+'</b><span>'+(h.arquivo||'')+'</span><span>'+(h.resumo||'')+'</span></div>').join('');
+}
+
+/* ============ slides para WhatsApp ============ */
+/* Mesmo template do painel de vendas: régua de referência 1200×675,
+   multiplicada por S para a resolução final. Nada de cor ou desenho muda aqui. */
+const CORES_SLIDE={fundo:'#232323',texto:'#ffffff',amarelo:'#ffe000',
+  sombra:'#2e2e2e',ok:'#48d17a',atencao:'#f2c141',alerta:'#f0625f',
+  cabFundo:'#ffe000',cabTexto:'#1a1a1a',linhaA:'#2b2b2b',linhaB:'#262626',mescla:'#333333',colDestaque:'#3a4046',
+  grade:'#3d3d3d',rodape:'#1b1b1b'};
+function mesDoPainel(){
+  return (estado.config.rotuloMes||'').toUpperCase().replace(/\s*·.*$/,'');
+}
+
+/* Logo oficial da Renault, embutida como máscara de luminância.
+   Desenhada com composição 'lighter': o preto da máscara não soma nada e o
+   branco soma tudo, o que dá borda suave sobre o fundo grafite e permite
+   reaproveitar a mesma arte na versão esmaecida do canto, só baixando o alfa. */
+const LOGO_PROP=250/328;
+const LOGO_SRC='data:image/png;base64,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';
+let logoRenault=null, logoPronta=false;
+function carregarLogo(){
+  return new Promise(res=>{
+    if(logoPronta) return res(logoRenault);
+    const im=new Image();
+    im.onload=()=>{ logoRenault=im; logoPronta=true; res(im); };
+    im.onerror=()=>{ logoPronta=true; res(null); };
+    im.src=LOGO_SRC;
+  });
+}
+/* desenha a logo com altura h, centrada em (cx,cy); alfa<1 gera a versão esmaecida */
+function marcaRenault(ctx,cx,cy,h,alfa){
+  if(!logoRenault) return;
+  const w=h*LOGO_PROP;
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  ctx.globalAlpha=alfa===undefined?1:alfa;
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality='high';
+  ctx.drawImage(logoRenault,cx-w/2,cy-h/2,w,h);
+  ctx.restore();
+}
+
+function molduraSlide(ctx,W,H,titulo,subtitulo){
+  const S=W/1200;
+  const px=v=>v*S;
+
+  ctx.fillStyle=CORES_SLIDE.fundo; ctx.fillRect(0,0,W,H);
+
+  /* marca grande esmaecida, canto inferior direito */
+  marcaRenault(ctx,px(1132),px(566),px(268),0.055);
+
+  /* faixas amarelas, canto inferior esquerdo */
+  ctx.save();
+  ctx.lineCap='butt'; ctx.strokeStyle=CORES_SLIDE.amarelo; ctx.lineWidth=px(7);
+  for(let i=0;i<4;i++){
+    const d=px(-12+i*22);
+    ctx.beginPath(); ctx.moveTo(d,H); ctx.lineTo(d+px(95),H-px(95)); ctx.stroke();
+  }
+  ctx.restore();
+
+  /* marca no topo direito */
+  marcaRenault(ctx,px(962),px(48),px(64),1);
+  ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+  ctx.fillStyle=CORES_SLIDE.texto;
+  ctx.font=`600 ${px(37)}px Montserrat, Barlow, sans-serif`;
+  const xE=px(1000); ctx.fillText('EURO',xE,px(62));
+  const wE=ctx.measureText('EURO').width;
+  ctx.font=`800 ${px(37)}px Montserrat, Barlow, sans-serif`;
+  ctx.fillText('VIA',xE+wE,px(62));
+
+  /* assinatura no rodapé */
+  ctx.textAlign='right';
+  ctx.font=`700 ${px(13.5)}px Montserrat, Barlow, sans-serif`;
+  ctx.fillText('A MAIOR CONCESSIONÁRIA RENAULT DO NORDESTE',px(1142),px(637));
+
+  /* títulos */
+  ctx.textAlign='center';
+  ctx.font=`700 ${px(30)}px Montserrat, Barlow, sans-serif`;
+  ctx.fillText(titulo,W/2,px(172));
+  let topo=px(212);
+  if(subtitulo){
+    ctx.font=`700 ${px(24)}px Montserrat, Barlow, sans-serif`;
+    ctx.fillText(subtitulo,W/2,px(220));
+    const w=ctx.measureText(subtitulo).width;
+    ctx.strokeStyle=CORES_SLIDE.texto; ctx.lineWidth=px(1.8);
+    ctx.beginPath(); ctx.moveTo(W/2-w/2,px(226)); ctx.lineTo(W/2+w/2,px(226)); ctx.stroke();
+    topo=px(254);
+  }
+  return {S,px,topo,esq:px(40),larg:px(1120),alt:px(552)-topo};
+}
+
+/* Agrupa colunas vizinhas que compartilham o mesmo 'sup'.
+   Colunas sem 'sup' ficam sozinhas e ocupam as duas faixas do cabeçalho. */
+function gruposDe(cols){
+  const g=[]; let i=0;
+  while(i<cols.length){
+    if(cols[i].sup){ let j=i; while(j<cols.length&&cols[j].sup===cols[i].sup) j++;
+      g.push({sup:cols[i].sup,ini:i,fim:j}); i=j; }
+    else { g.push({sup:null,ini:i,fim:i+1}); i++; }
+  }
+  return g;
+}
+
+/* Tabela genérica. cols: [{rot,sup?,esq?}] · linhas: [[{t,cor?,forte?}]] */
+function desenharTabelaSlide(ctx,area,cols,linhas,rodape){
+  const {px,esq,larg,topo}=area;
+  const temSup=cols.some(c=>c.sup);
+  const nLin=linhas.length+(rodape?1:0);
+
+  /* largura natural de cada coluna, medida no tamanho base */
+  let F=px(21);
+  const pad=px(9);
+  const medir=(txt,peso,tam)=>{ ctx.font=`${peso} ${tam}px "Barlow Condensed", Barlow, sans-serif`; return ctx.measureText(txt).width; };
+  const natural=cols.map((c,i)=>{
+    let w=medir(c.rot,700,F*0.94);
+    linhas.concat(rodape?[rodape]:[]).forEach(l=>{ w=Math.max(w,medir(String(l[i]?l[i].t:''),600,F)); });
+    return w+pad*2;
+  });
+  /* o nome do grupo é mesclado, então só precisa caber na soma das colunas dele */
+  gruposDe(cols).forEach(g=>{
+    if(!g.sup) return;
+    const preciso=medir(g.sup,700,F*0.9)+pad*2;
+    let tem=0; for(let k=g.ini;k<g.fim;k++) tem+=natural[k];
+    if(tem<preciso){ const extra=(preciso-tem)/(g.fim-g.ini);
+      for(let k=g.ini;k<g.fim;k++) natural[k]+=extra; }
+  });
+  let total=natural.reduce((a,b)=>a+b,0);
+  if(total>larg){ F=F*(larg/total); }                    /* aperta a fonte se não couber */
+  const escala=larg/total;
+  const colW=natural.map(w=>w*escala);
+
+  const hCab=temSup?F*2.5:F*1.9;
+  let hLin=Math.min(F*1.85,(area.alt-hCab)/nLin);
+  const altTotal=hCab+hLin*nLin;
+  let y=topo+Math.max(0,(area.alt-altTotal)/2);
+
+  const fonteCel=t=>`${t.forte?700:600} ${F}px "Barlow Condensed", Barlow, sans-serif`;
+  ctx.textBaseline='middle';
+
+  /* cabeçalho: nome do modelo mesclado em cima, Meta/Vol/% embaixo */
+  ctx.fillStyle=CORES_SLIDE.cabFundo; ctx.fillRect(esq,y,larg,hCab);
+  const hSup=temSup?hCab*0.44:0;
+  const xIni=[]; { let acc=esq; cols.forEach((c,i)=>{ xIni[i]=acc; acc+=colW[i]; }); }
+  ctx.fillStyle=CORES_SLIDE.cabTexto; ctx.textAlign='center';
+  gruposDe(cols).forEach(g=>{
+    const x0=xIni[g.ini];
+    let w=0; for(let k=g.ini;k<g.fim;k++) w+=colW[k];
+    if(g.sup&&temSup){
+      ctx.font=`700 ${F*0.9}px "Barlow Condensed", Barlow, sans-serif`;
+      ctx.fillText(g.sup,x0+w/2,y+hSup*0.55);
+      ctx.strokeStyle='rgba(26,26,26,0.32)'; ctx.lineWidth=px(1.2);
+      ctx.beginPath(); ctx.moveTo(x0+px(7),y+hSup); ctx.lineTo(x0+w-px(7),y+hSup); ctx.stroke();
+      ctx.fillStyle=CORES_SLIDE.cabTexto;
+      ctx.font=`700 ${F*0.94}px "Barlow Condensed", Barlow, sans-serif`;
+      for(let k=g.ini;k<g.fim;k++) ctx.fillText(cols[k].rot,xIni[k]+colW[k]/2,y+hSup+(hCab-hSup)/2);
+    } else {
+      ctx.font=`700 ${F*0.94}px "Barlow Condensed", Barlow, sans-serif`;
+      ctx.fillText(cols[g.ini].rot,x0+w/2,y+hCab/2);
+    }
+  });
+  /* separadores: altura cheia entre grupos, só a faixa de baixo dentro do grupo */
+  ctx.strokeStyle='rgba(26,26,26,0.32)'; ctx.lineWidth=px(1.2);
+  for(let i=0;i<cols.length-1;i++){
+    const mesmoGrupo = temSup && cols[i].sup && cols[i].sup===cols[i+1].sup;
+    const xb=xIni[i]+colW[i];
+    ctx.beginPath(); ctx.moveTo(xb,y+(mesmoGrupo?hSup:0)); ctx.lineTo(xb,y+hCab); ctx.stroke();
+  }
+  y+=hCab;
+
+  /* corpo */
+  const desenharLinha=(l,fundo,borda)=>{
+    ctx.fillStyle=fundo; ctx.fillRect(esq,y,larg,hLin);
+    /* colunas destacadas ganham fundo próprio, como o .forte do painel.
+       O rodapé mantém o fundo dele, igual ao tfoot da tabela. */
+    if(!borda){
+      let xd=esq;
+      cols.forEach((c,i)=>{
+        if(c.destaque){ ctx.fillStyle=CORES_SLIDE.colDestaque; ctx.fillRect(xd,y,colW[i],hLin); }
+        xd+=colW[i];
+      });
+    }
+    if(borda){ ctx.strokeStyle=CORES_SLIDE.amarelo; ctx.lineWidth=px(2);
+      ctx.beginPath(); ctx.moveTo(esq,y); ctx.lineTo(esq+larg,y); ctx.stroke(); }
+    let x=esq;
+    cols.forEach((c,i)=>{
+      const cel=l[i]||{t:''};
+      /* células mescladas e suas continuações são desenhadas depois, em bloco */
+      if(cel.oculto||(cel.span&&cel.span>1)){ x+=colW[i]; return; }
+      ctx.fillStyle = cel.cor?CORES_SLIDE[cel.cor]:CORES_SLIDE.texto;
+      ctx.font=fonteCel(cel);
+      if(i===0&&c.esq){ ctx.textAlign='left'; ctx.fillText(cel.t,x+pad,y+hLin/2); }
+      else { ctx.textAlign='center'; ctx.fillText(cel.t,x+colW[i]/2,y+hLin/2); }
+      x+=colW[i];
+    });
+    /* grade vertical */
+    ctx.strokeStyle=CORES_SLIDE.grade; ctx.lineWidth=1;
+    let gx=esq;
+    cols.forEach((c,i)=>{ gx+=colW[i];
+      if(i<cols.length-1){ ctx.beginPath(); ctx.moveTo(gx,y); ctx.lineTo(gx,y+hLin); ctx.stroke(); } });
+    y+=hLin;
+  };
+  const yLinhas=[];
+  linhas.forEach((l,i)=>{ yLinhas.push(y); desenharLinha(l,i%2?CORES_SLIDE.linhaB:CORES_SLIDE.linhaA,false); });
+
+  /* mesclagem vertical: um bloco só, valor centralizado no grupo */
+  let xc=esq;
+  cols.forEach((c,ci)=>{
+    linhas.forEach((l,i)=>{
+      const cel=l[ci];
+      if(!cel||!cel.span||cel.span<2) return;
+      const y0=yLinhas[i], hM=hLin*cel.span;
+      ctx.fillStyle=CORES_SLIDE.mescla; ctx.fillRect(xc,y0,colW[ci],hM);
+      ctx.strokeStyle=CORES_SLIDE.grade; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(xc,y0); ctx.lineTo(xc,y0+hM);
+      if(ci<cols.length-1){ ctx.moveTo(xc+colW[ci],y0); ctx.lineTo(xc+colW[ci],y0+hM); }
+      ctx.stroke();
+      ctx.fillStyle=cel.cor?CORES_SLIDE[cel.cor]:CORES_SLIDE.texto;
+      ctx.font=fonteCel(cel); ctx.textAlign='center';
+      ctx.fillText(cel.t,xc+colW[ci]/2,y0+hM/2);
+    });
+    xc+=colW[ci];
+  });
+
+  if(rodape) desenharLinha(rodape,CORES_SLIDE.rodape,true);
+}
+
+
+
+
+
+/* ---------- os slides deste painel ---------- */
+function corPct(x,ref){
+  const c=classeComp(x,ref);
+  return c==='pct-alto'?'ok':(c==='pct-baixo'?'alerta':'atencao');
+}
+/* mesma tabela da tela: canais nas linhas, VN e VDA em cada etapa */
+function slideCanais(lojas,titulo,sub){
+  return function(ctx,W,H){
+    const geral=celula(lojas,CANAIS);
+    const usados=CANAIS.filter(m=>{
+      if(estado.config.mostrarVazias) return true;
+      const c=celula(lojas,[m]);
+      return c.total.ent||c.total.ag||c.total.fl||c.total.vd;
+    });
+    const area=molduraSlide(ctx,W,H,titulo,sub);
+    const cols=[{rot:'Canal',esq:true}];
+    ETAPAS_TAB.forEach(e=>{
+      cols.push({rot:'VN',sup:e[1]},{rot:'VDA',sup:e[1],destaque:e[0]==='vd'});
+    });
+    cols.push({rot:'%conv.'});
+    const cel=(c,rodape)=>{
+      const out=[];
+      ETAPAS_TAB.forEach(([k])=>{
+        out.push({t:fmtNum(c.vn[k]),cor:c.vn[k]?null:'grade'},
+                 {t:fmtNum(c.vd[k]),cor:c.vd[k]?null:'grade'});
+      });
+      out.push({t:c.temEnt?fmtPct(c.conv):'—',forte:true,
+        cor:(rodape||!c.temEnt)?null:corPct(c.conv,geral.conv)});
+      return out;
+    };
+    const corpo=usados.map(m=>[{t:m,forte:true}].concat(cel(celula(lojas,[m]),false)));
+    const rodape=[{t:'TOTAL',forte:true}].concat(cel(geral,true).map(c=>Object.assign({},c,{forte:true})));
+    desenharTabelaSlide(ctx,area,cols,corpo,rodape);
+  };
+}
+/* Slide: funil de leads por loja (VN) ou por praça (VDA).
+   Mimetiza o layout das imagens de referência: Entrantes · Encaminhados · Agendados · Fluxo · Venda
+   com uma linha por loja (ou praça) e TOTAL EUROVIA no rodapé. */
+function slideFunil(dep){
+  const ehVN=dep==='vn';
+  const titulo='FUNIL DE LEADS - '+(ehVN?'VEÍCULOS NOVOS - VN':'VENDA DIRETA - VDA');
+  const sub='RENAULT - '+mesDoPainel();
+  return function(ctx,W,H){
+    const area=molduraSlide(ctx,W,H,titulo,sub);
+    const cls=p=>p>=0.5?'ok':(p>=0.25?'atencao':'alerta');
+    const cols=[
+      {rot:ehVN?'LOJA':'PRAÇA',esq:true},
+      {rot:'ENTRANTES'},
+      {rot:'TOTAL',sup:'ENCAMINHADOS'},{rot:'%',sup:'ENCAMINHADOS'},
+      {rot:'TOTAL',sup:'AGENDADOS'},{rot:'%',sup:'AGENDADOS'},
+      {rot:'TOTAL',sup:'FLUXO'},{rot:'%',sup:'FLUXO'},
+      {rot:'TOTAL',sup:'VENDA'},{rot:'VS FLUXO',sup:'VENDA'},{rot:'VS ENTR.',sup:'VENDA'},
+      {rot:'TOTAL',sup:'FATURADOS'},{rot:'VS FLUXO',sup:'FATURADOS'},{rot:'VS ENTR.',sup:'FATURADOS'}
+    ];
+    const grupos = ehVN ? NOMES.map(n=>({rot:n,lojas:[n]}))
+                        : PRACAS.map(p=>({rot:p,lojas:PRACA_LOJAS[p]||[]}));
+    const linha=t=>{
+      const pEnc=pct(t.enc,t.ent), pAg=pct(t.ag,t.ent), pFl=pct(t.fl,t.ag),
+            pVF=pct(t.vd,t.fl), pVE=pct(t.vd,t.ent),
+            pFF=pct(t.ft,t.fl), pFE=pct(t.ft,t.ent);
+      return [
+        {t:t._rot,forte:true},
+        {t:fmtNum(t.ent),forte:true},
+        {t:fmtNum(t.enc)},
+        {t:t.ent?fmtPct(pEnc):'—',cor:t.ent?cls(pEnc):null},
+        {t:fmtNum(t.ag)},
+        {t:t.ent?fmtPct(pAg):'—',cor:t.ent?cls(pAg):null},
+        {t:fmtNum(t.fl)},
+        {t:t.ag?fmtPct(pFl):'—',cor:t.ag?cls(pFl):null},
+        {t:fmtNum(t.vd),forte:true},
+        {t:t.fl?fmtPct(pVF):'—',cor:t.fl?cls(pVF):null},
+        {t:t.ent?fmtPct(pVE):'—',cor:t.ent?cls(pVE):null},
+        {t:fmtNum(t.ft),forte:true},
+        {t:t.fl?fmtPct(pFF):'—',cor:t.fl?cls(pFF):null},
+        {t:t.ent?fmtPct(pFE):'—',cor:t.ent?cls(pFE):null}
+      ];
+    };
+    const tot={_rot:'EUROVIA',ent:0,enc:0,ag:0,fl:0,vd:0,ft:0};
+    const corpo=grupos.map(g=>{
+      const t=_celLojaDep(g.lojas,dep); t._rot=g.rot;
+      ['ent','enc','ag','fl','vd','ft'].forEach(k=>tot[k]+=t[k]);
+      return linha(t);
+    });
+    const rodape=linha(tot).map(c=>Object.assign({},c,{forte:true}));
+    desenharTabelaSlide(ctx,area,cols,corpo,rodape);
+  };
+}
+
+const TAMANHOS={pequeno:1200,medio:1600,grande:1920};
+const larguraSlide=()=>TAMANHOS[estado.config.tamanhoSlide]||TAMANHOS.pequeno;
+let slideAtual=null;
+function slideDe(tipo){
+  if(tipo==='geral'){
+    const lojas=lojasComDado();
+    return {titulo:'Slide · total geral',secao:'bloco-geral',
+      fn:slideCanais(lojas,'LEADS POR MÍDIA - TOTAL GERAL',rotuloAtivo().toUpperCase()+' - '+mesDoPainel())};
+  }
+  if(tipo.indexOf('loja:')===0){
+    const n=tipo.slice(5);
+    return {titulo:'Slide · '+n,secao:null,
+      fn:slideCanais([n],'LEADS POR MÍDIA - '+n,pracaDe(n)+' - '+mesDoPainel())};
+  }
+  if(tipo==='funil-vn'){
+    return {titulo:'Slide · funil VN por loja',secao:'aba-loja',fn:slideFunil('vn')};
+  }
+  if(tipo==='funil-vd'){
+    return {titulo:'Slide · funil VDA por praça',secao:'aba-loja',fn:slideFunil('vd')};
+  }
+  return null;
+}
+async function gerarSlide(tipo){
+  const cfg=slideDe(tipo); if(!cfg) return;
+  slideAtual=tipo;
+  const cv=document.getElementById('tela-slide');
+  const L=larguraSlide();
+  cv.width=L; cv.height=Math.round(L*675/1200);
+  const ctx=cv.getContext('2d');
+  try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
+  await carregarLogo();
+  ctx.clearRect(0,0,cv.width,cv.height);
+  cfg.fn(ctx,cv.width,cv.height);
+  document.getElementById('titulo-slide').firstChild.textContent=cfg.titulo+' ';
+  const bloco=document.getElementById('bloco-slide');
+  /* o bloco é movido para a aba de origem do slide, assim o preview aparece ali mesmo */
+  const destino=document.getElementById(cfg.secao||'aba-canais') || document.getElementById('aba-canais');
+  destino.appendChild(bloco);
+  bloco.hidden=false;
+  if(bloco.scrollIntoView) bloco.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function nomeArquivoSlide(){
+  return ('eurovia-midia-'+String(slideAtual).replace('loja:','')).replace(/[^\w\-]/g,'-').toLowerCase()+'.png';
+}
+async function copiarSlide(){
+  const cv=document.getElementById('tela-slide');
+  const rec=document.getElementById('recado-slide');
+  const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+  const mostrar=txt=>{ rec.textContent=txt; rec.classList.add('visivel'); setTimeout(()=>rec.classList.remove('visivel'),2600); };
+  try{
+    if(!navigator.clipboard||!window.ClipboardItem) throw new Error('sem suporte');
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+    mostrar('Copiado · cole no WhatsApp');
+  }catch(e){
+    baixarBlob(blob,nomeArquivoSlide());
+    mostrar('Cópia bloqueada · PNG baixado');
+  }
+}
+function baixarBlob(blob,nome){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=nome; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+
+/* ============ utilidades ============ */
+function dataBR(iso){ try{ return new Date(iso).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}); }catch(e){ return iso||'—'; } }
+function selo(k,txt,classe){
+  const el=document.getElementById('selo-'+k); if(!el) return;
+  el.textContent=txt; el.className='selo-estado'+(classe?' '+classe:'');
+}
+function recado(id,texto,cor){
+  const rec=document.getElementById(id); if(!rec) return;
+  if(texto) rec.textContent=texto;
+  rec.style.color=cor||'';
+  rec.classList.add('visivel'); setTimeout(()=>rec.classList.remove('visivel'),2600);
+}
+function baixar(nome,conteudo,tipo){
+  const b=new Blob([conteudo],{type:tipo});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=nome; a.click(); URL.revokeObjectURL(a.href);
+}
+/* ============ Relatório por loja / vendedor ============ */
+/* Duas tabelas no formato do painel de vendas:
+   - VN: uma linha por loja + total EUROVIA
+   - VDA: uma linha por praça (Pernambuco, Paraíba, Bahia) + total EUROVIA
+   Colunas: Entrantes | Encaminhados (Total,%) | Agendados (Total,%) | Fluxo (Total,%) | Venda (Total, vs fluxo, vs entr.)
+   Percentuais: Enc/Ent · Ag/Ent · Fluxo/Ag · Venda/Fluxo · Venda/Ent */
+function _celLojaDep(lojas,dk){
+  const t={ent:0,enc:0,ag:0,fl:0,vd:0,ft:0};
+  lojas.forEach(n=>CANAIS.forEach(m=>{
+    const r=(((estado.dados[n]||{})[dk]||{})[m])||{};
+    t.ent+=+r.ent||0; t.enc+=+r.enc||0; t.ag+=+r.ag||0;
+    t.fl+=(+r.cAg||0)+(+r.cNao||0); t.vd+=+r.vd||0; t.ft+=+r.ft||0;
+  }));
+  return t;
+}
+function _linhaRelLoja(rot,t){
+  const pEnc=pct(t.enc,t.ent), pAg=pct(t.ag,t.ent), pFl=pct(t.fl,t.ag),
+        pVF=pct(t.vd,t.fl), pVE=pct(t.vd,t.ent),
+        pFF=pct(t.ft,t.fl), pFE=pct(t.ft,t.ent);
+  const cls=p=>p>=0.5?'pct-alto':(p>=0.25?'pct-medio':'pct-baixo');
+  return '<tr><th>'+rot+'</th>'+
+    '<td class="'+(t.ent?'':'zero')+'">'+fmtNum(t.ent)+'</td>'+
+    '<td class="'+(t.enc?'':'zero')+'">'+fmtNum(t.enc)+'</td>'+
+    '<td class="'+(t.ent?cls(pEnc):'zero')+'">'+(t.ent?fmtPct(pEnc):'—')+'</td>'+
+    '<td class="'+(t.ag?'':'zero')+'">'+fmtNum(t.ag)+'</td>'+
+    '<td class="'+(t.ent?cls(pAg):'zero')+'">'+(t.ent?fmtPct(pAg):'—')+'</td>'+
+    '<td class="'+(t.fl?'':'zero')+'">'+fmtNum(t.fl)+'</td>'+
+    '<td class="'+(t.ag?cls(pFl):'zero')+'">'+(t.ag?fmtPct(pFl):'—')+'</td>'+
+    '<td class="'+(t.vd?'':'zero')+'">'+fmtNum(t.vd)+'</td>'+
+    '<td class="'+(t.fl?cls(pVF):'zero')+'">'+(t.fl?fmtPct(pVF):'—')+'</td>'+
+    '<td class="'+(t.ent?cls(pVE):'zero')+'">'+(t.ent?fmtPct(pVE):'—')+'</td>'+
+    '<td class="'+(t.ft?'':'zero')+'">'+fmtNum(t.ft)+'</td>'+
+    '<td class="'+(t.fl?cls(pFF):'zero')+'">'+(t.fl?fmtPct(pFF):'—')+'</td>'+
+    '<td class="'+(t.ent?cls(pFE):'zero')+'">'+(t.ent?fmtPct(pFE):'—')+'</td></tr>';
+}
+/* ============ utilidades de ordenação de tabelas ============ */
+/* Cada tabela tem um slot em estado.config.ordem.<tabela> = {campo,dir}.
+   Clique no cabeçalho cicla: nada → desc → asc → nada (volta ao padrão). */
+function cicloOrdem(ord,campo){
+  if(!ord||ord.campo!==campo) return {campo,dir:'desc'};
+  if(ord.dir==='desc') return {campo,dir:'asc'};
+  return {campo:'',dir:''};
+}
+function ordenarLinhas(linhas,ord,extrator){
+  if(!ord||!ord.campo) return linhas;
+  const mult=ord.dir==='asc'?1:-1;
+  return linhas.slice().sort((a,b)=>{
+    const va=extrator(a,ord.campo), vb=extrator(b,ord.campo);
+    if(typeof va==='string'||typeof vb==='string')
+      return String(va||'').localeCompare(String(vb||''),'pt-BR')*mult;
+    return ((+va||0)-(+vb||0))*mult;
+  });
+}
+function thOrd(tabela,campo,rot,extra){
+  const ord=(estado.config.ordem||{})[tabela]||{};
+  const ativa=ord.campo===campo;
+  const seta=ativa?(ord.dir==='asc'?'▲':'▼'):'';
+  const cls='ordenavel'+(ativa?' ativa':'')+(extra||'');
+  return '<th class="'+cls+'" data-tabela="'+tabela+'" data-ordem="'+campo+'"'+
+    (ativa?' data-seta="'+seta+'"':'')+'>'+rot+'</th>';
+}
+async function trocarOrdem(tabela,campo,callback){
+  estado.config.ordem=estado.config.ordem||JSON.parse(JSON.stringify(ORDEM_PADRAO));
+  estado.config.ordem[tabela]=cicloOrdem(estado.config.ordem[tabela],campo);
+  await guardar('config',estado.config);
+  callback();
+}
+async function resetarOrdem(tabela,callback){
+  estado.config.ordem=estado.config.ordem||JSON.parse(JSON.stringify(ORDEM_PADRAO));
+  estado.config.ordem[tabela]={campo:'',dir:''};
+  await guardar('config',estado.config);
+  callback();
+}
+
+function _cabRelLoja(primeira,tabela){
+  const T=(c,r)=>thOrd(tabela,c,r).replace('<th','<th rowspan="2"');
+  const S=(c,r)=>thOrd(tabela,c,r);
+  return '<thead>'+
+    '<tr>'+T('nome',primeira)+T('ent','Entrantes')+
+    '<th colspan="2">Encaminhados</th><th colspan="2">Agendados</th>'+
+    '<th colspan="2">Fluxo</th><th colspan="3">Venda</th><th colspan="3">Faturados</th></tr>'+
+    '<tr class="sub">'+
+      S('enc','Total')+S('pct_enc','vs entrantes')+
+      S('ag','Total')+S('pct_ag','vs entrantes')+
+      S('fl','Total')+S('pct_fl','vs agendados')+
+      S('vd','Total')+S('pct_vf','vs fluxo')+S('pct_ve','vs entrantes')+
+      S('ft','Total')+S('pct_ff','vs fluxo')+S('pct_fe','vs entrantes')+
+    '</tr></thead>';
+}
+/* Extrator usado para ordenar as tabelas por loja e por praça.
+   Chaves ent/enc/ag/fl/vd são absolutas; pct_* são razões derivadas. */
+function _extLoja(l,campo){
+  if(campo==='nome') return l._rot||'';
+  if(campo==='pct_enc') return l.ent?l.enc/l.ent:-1;
+  if(campo==='pct_ag')  return l.ent?l.ag/l.ent:-1;
+  if(campo==='pct_fl')  return l.ag?l.fl/l.ag:-1;
+  if(campo==='pct_vf')  return l.fl?l.vd/l.fl:-1;
+  if(campo==='pct_ve')  return l.ent?l.vd/l.ent:-1;
+  if(campo==='pct_ff')  return l.fl?l.ft/l.fl:-1;
+  if(campo==='pct_fe')  return l.ent?l.ft/l.ent:-1;
+  return +l[campo]||0;
+}
+function desenharRelatorioLoja(){
+  const alvo1=document.getElementById('tabela-loja-vn');
+  const alvo2=document.getElementById('tabela-loja-vd');
+  if(!alvo1||!alvo2) return;
+  const ordVN=(estado.config.ordem||{}).lojaVN||{campo:'',dir:''};
+  const ordVD=(estado.config.ordem||{}).lojaVD||{campo:'',dir:''};
+  /* VN por loja */
+  const linhasVN=NOMES.map(n=>{ const t=_celLojaDep([n],'vn'); t._rot=n; return t; });
+  const totVN={_rot:'EUROVIA',ent:0,enc:0,ag:0,fl:0,vd:0,ft:0};
+  linhasVN.forEach(t=>['ent','enc','ag','fl','vd','ft'].forEach(k=>totVN[k]+=t[k]));
+  const corpoVN=ordenarLinhas(linhasVN,ordVN,_extLoja)
+    .map(t=>_linhaRelLoja(t._rot,t)).join('');
+  alvo1.innerHTML='<table>'+_cabRelLoja('Loja','lojaVN')+'<tbody>'+corpoVN+'</tbody>'+
+    '<tfoot>'+_linhaRelLoja('EUROVIA',totVN).replace('<tr>','<tr class="total">')+'</tfoot></table>';
+  document.getElementById('selo-loja-vn').textContent=
+    fmtNum(totVN.ent)+' entrantes · '+fmtNum(totVN.vd)+' vendas · '+fmtNum(totVN.ft)+' faturados'+
+    (ordVN.campo?' · ordenada por '+ordVN.campo+' '+ordVN.dir:'');
+  /* VDA por praça */
+  const linhasVD=PRACAS.map(p=>{ const t=_celLojaDep(PRACA_LOJAS[p]||[],'vd'); t._rot=p; return t; });
+  const totVD={_rot:'EUROVIA',ent:0,enc:0,ag:0,fl:0,vd:0,ft:0};
+  linhasVD.forEach(t=>['ent','enc','ag','fl','vd','ft'].forEach(k=>totVD[k]+=t[k]));
+  const corpoVD=ordenarLinhas(linhasVD,ordVD,_extLoja)
+    .map(t=>_linhaRelLoja(t._rot,t)).join('');
+  alvo2.innerHTML='<table>'+_cabRelLoja('Praça','lojaVD')+'<tbody>'+corpoVD+'</tbody>'+
+    '<tfoot>'+_linhaRelLoja('EUROVIA',totVD).replace('<tr>','<tr class="total">')+'</tfoot></table>';
+  document.getElementById('selo-loja-vd').textContent=
+    fmtNum(totVD.ent)+' entrantes · '+fmtNum(totVD.vd)+' vendas · '+fmtNum(totVD.ft)+' faturados'+
+    (ordVD.campo?' · ordenada por '+ordVD.campo+' '+ordVD.dir:'');
+  /* liga os cliques nos cabeçalhos das duas tabelas */
+  [alvo1,alvo2].forEach(el=>el.querySelectorAll('th.ordenavel').forEach(th=>{
+    th.addEventListener('click',()=>trocarOrdem(th.dataset.tabela,th.dataset.ordem,desenharRelatorioLoja));
+  }));
+}
+function copiarRelLoja(dep){
+  const linhas=[['Loja','Entrantes','Encaminhados','% Enc','Agendados','% Ag','Fluxo','% Fluxo',
+    'Venda','% V/Fluxo','% V/Ent.','Faturados','% F/Fluxo','% F/Ent.']];
+  const tot={ent:0,enc:0,ag:0,fl:0,vd:0,ft:0};
+  const addRow=(rot,t)=>linhas.push([rot,t.ent,t.enc,
+    t.ent?fmtPct(pct(t.enc,t.ent)):'',t.ag,t.ent?fmtPct(pct(t.ag,t.ent)):'',
+    t.fl,t.ag?fmtPct(pct(t.fl,t.ag)):'',
+    t.vd,t.fl?fmtPct(pct(t.vd,t.fl)):'',t.ent?fmtPct(pct(t.vd,t.ent)):'',
+    t.ft,t.fl?fmtPct(pct(t.ft,t.fl)):'',t.ent?fmtPct(pct(t.ft,t.ent)):'']);
+  if(dep==='vn'){
+    NOMES.forEach(n=>{
+      const t=_celLojaDep([n],'vn');
+      addRow(n,t);
+      ['ent','enc','ag','fl','vd','ft'].forEach(k=>tot[k]+=t[k]);
+    });
+  } else {
+    linhas[0][0]='Praça';
+    PRACAS.forEach(p=>{
+      const t=_celLojaDep(PRACA_LOJAS[p]||[],'vd');
+      addRow(p,t);
+      ['ent','enc','ag','fl','vd','ft'].forEach(k=>tot[k]+=t[k]);
+    });
+  }
+  addRow('EUROVIA',tot);
+  const txt=linhas.map(l=>l.join('\t')).join('\n');
+  const id='recado-loja-'+dep;
+  navigator.clipboard.writeText(txt).then(()=>recado(id,'Copiado'))
+    .catch(()=>recado(id,'Não deu para copiar','var(--alerta)'));
+}
+
+/* ============ Relatório por vendedor ============ */
+/* Linha por vendedor identificado, com filtros de departamento, praça e loja.
+   Entrantes/Encaminhados/Agendados/Fluxo vêm dos mergulhos; Venda vem do
+   Google Sheets (o lançamento manual não guarda vendedor). */
+function _lojasDoFiltro(){
+  const f=estado.config.filtroVendedor||{dep:'',praca:'',loja:''};
+  if(f.loja) return [f.loja];
+  if(f.praca) return (PRACA_LOJAS[f.praca]||[]).slice();
+  return NOMES.slice();
+}
+function _linhasVendedor(){
+  const f=estado.config.filtroVendedor||{dep:'',praca:'',loja:''};
+  const lojasOk=_lojasDoFiltro();
+  const out=[];
+  lojasOk.forEach(loja=>{
+    const vends=(estado.vendedores||{})[loja]||{};
+    Object.keys(vends).forEach(nome=>{
+      const v=vends[nome];
+      if(f.dep && v.dep!==f.dep) return;
+      const ent=+v.ent||0, enc=+v.enc||0, ag=+v.ag||0,
+            fl=(+v.cAg||0)+(+v.cNao||0), vd=+v.vd||0, ft=+v.ft||0;
+      if(!ent && !enc && !ag && !fl && !vd && !ft) return;
+      out.push({loja,nome,dep:v.dep,ent,enc,ag,fl,vd,ft});
+    });
+  });
+  const ord=(estado.config.ordem||{}).vendedor||{campo:'',dir:''};
+  if(ord.campo) return ordenarLinhas(out,ord,_extVendedor);
+  /* padrão: Venda desc, depois Fluxo desc, depois Entrantes desc */
+  out.sort((a,b)=>b.vd-a.vd || b.fl-a.fl || b.ent-a.ent);
+  return out;
+}
+function _extVendedor(l,campo){
+  if(campo==='nome') return l.nome||'';
+  if(campo==='loja') return l.loja||'';
+  if(campo==='dep')  return l.dep||'';
+  if(campo==='pct_ag') return l.ent?l.ag/l.ent:-1;
+  if(campo==='pct_fl') return l.ag?l.fl/l.ag:-1;
+  if(campo==='pct_vf') return l.fl?l.vd/l.fl:-1;
+  if(campo==='pct_ve') return l.ent?l.vd/l.ent:-1;
+  if(campo==='pct_ff') return l.fl?l.ft/l.fl:-1;
+  if(campo==='pct_fe') return l.ent?l.ft/l.ent:-1;
+  return +l[campo]||0;
+}
+function desenharFiltrosVendedor(){
+  const f=estado.config.filtroVendedor||{dep:'',praca:'',loja:''};
+  const selDep=document.getElementById('filtro-vendedor-dep');
+  const selPraca=document.getElementById('filtro-vendedor-praca');
+  const selLoja=document.getElementById('filtro-vendedor-loja');
+  if(!selDep||!selPraca||!selLoja) return;
+  selDep.value=f.dep||'';
+  selPraca.innerHTML='<option value="">Todas</option>'+
+    PRACAS.map(p=>'<option value="'+p+'"'+(f.praca===p?' selected':'')+'>'+p+'</option>').join('');
+  const lojasDisp = f.praca ? (PRACA_LOJAS[f.praca]||[]) : NOMES;
+  selLoja.innerHTML='<option value="">Todas</option>'+
+    lojasDisp.map(n=>'<option value="'+n+'"'+(f.loja===n?' selected':'')+'>'+n+'</option>').join('');
+  /* se a loja atual não está na praça escolhida, zera */
+  if(f.loja && lojasDisp.indexOf(f.loja)<0){ f.loja=''; selLoja.value=''; }
+  const partes=[];
+  if(f.dep) partes.push(f.dep==='vn'?'VN':'VDA');
+  if(f.praca) partes.push(f.praca);
+  if(f.loja) partes.push(f.loja);
+  document.getElementById('selo-filtro-vendedor').textContent=
+    partes.length?partes.join(' · '):'sem filtro';
+}
+function desenharRelatorioVendedor(){
+  desenharFiltrosVendedor();
+  const alvo=document.getElementById('tabela-vendedor');
+  if(!alvo) return;
+  const linhas=_linhasVendedor();
+  if(!linhas.length){
+    alvo.innerHTML='<p class="dica">Nenhum vendedor com dado para o filtro atual.</p>';
+    document.getElementById('selo-vendedor').textContent='0 vendedor(es)';
+    return;
+  }
+  let corpo='';
+  const tot={ent:0,ag:0,fl:0,vd:0,ft:0};
+  const cls=p=>p>=0.5?'pct-alto':(p>=0.25?'pct-medio':'pct-baixo');
+  linhas.forEach(l=>{
+    const pAg=pct(l.ag,l.ent), pFl=pct(l.fl,l.ag),
+          pVF=pct(l.vd,l.fl), pVE=pct(l.vd,l.ent),
+          pFF=pct(l.ft,l.fl), pFE=pct(l.ft,l.ent);
+    corpo+='<tr>'+
+      '<th>'+l.nome+'</th>'+
+      '<td>'+l.loja+'</td>'+
+      '<td>'+(l.dep==='vn'?'VN':'VDA')+'</td>'+
+      '<td class="'+(l.ent?'':'zero')+'">'+fmtNum(l.ent)+'</td>'+
+      '<td class="'+(l.ag?'':'zero')+'">'+fmtNum(l.ag)+'</td>'+
+      '<td class="'+(l.ent?cls(pAg):'zero')+'">'+(l.ent?fmtPct(pAg):'—')+'</td>'+
+      '<td class="'+(l.fl?'':'zero')+'">'+fmtNum(l.fl)+'</td>'+
+      '<td class="'+(l.ag?cls(pFl):'zero')+'">'+(l.ag?fmtPct(pFl):'—')+'</td>'+
+      '<td class="'+(l.vd?'':'zero')+'">'+fmtNum(l.vd)+'</td>'+
+      '<td class="'+(l.fl?cls(pVF):'zero')+'">'+(l.fl?fmtPct(pVF):'—')+'</td>'+
+      '<td class="'+(l.ent?cls(pVE):'zero')+'">'+(l.ent?fmtPct(pVE):'—')+'</td>'+
+      '<td class="'+(l.ft?'':'zero')+'">'+fmtNum(l.ft)+'</td>'+
+      '<td class="'+(l.fl?cls(pFF):'zero')+'">'+(l.fl?fmtPct(pFF):'—')+'</td>'+
+      '<td class="'+(l.ent?cls(pFE):'zero')+'">'+(l.ent?fmtPct(pFE):'—')+'</td>'+
+      '</tr>';
+    ['ent','ag','fl','vd','ft'].forEach(k=>tot[k]+=l[k]);
+  });
+  const pAg=pct(tot.ag,tot.ent), pFl=pct(tot.fl,tot.ag),
+        pVF=pct(tot.vd,tot.fl), pVE=pct(tot.vd,tot.ent),
+        pFF=pct(tot.ft,tot.fl), pFE=pct(tot.ft,tot.ent);
+  const rodape='<tr><th>TOTAL</th><td>—</td><td>—</td>'+
+    '<td>'+fmtNum(tot.ent)+'</td>'+
+    '<td>'+fmtNum(tot.ag)+'</td><td>'+(tot.ent?fmtPct(pAg):'—')+'</td>'+
+    '<td>'+fmtNum(tot.fl)+'</td><td>'+(tot.ag?fmtPct(pFl):'—')+'</td>'+
+    '<td>'+fmtNum(tot.vd)+'</td><td>'+(tot.fl?fmtPct(pVF):'—')+'</td>'+
+    '<td>'+(tot.ent?fmtPct(pVE):'—')+'</td>'+
+    '<td>'+fmtNum(tot.ft)+'</td><td>'+(tot.fl?fmtPct(pFF):'—')+'</td>'+
+    '<td>'+(tot.ent?fmtPct(pFE):'—')+'</td></tr>';
+  const T=(c,r)=>thOrd('vendedor',c,r).replace('<th','<th rowspan="2"');
+  const S=(c,r)=>thOrd('vendedor',c,r);
+  alvo.innerHTML='<table>'+
+    '<thead><tr>'+T('nome','Vendedor')+T('loja','Loja')+T('dep','Dep')+T('ent','Entrantes')+
+    '<th colspan="2">Agendados</th><th colspan="2">Fluxo</th>'+
+    '<th colspan="3">Venda</th><th colspan="3">Faturados</th></tr>'+
+    '<tr class="sub">'+S('ag','Total')+S('pct_ag','vs entrantes')+
+    S('fl','Total')+S('pct_fl','vs agendados')+
+    S('vd','Total')+S('pct_vf','vs fluxo')+S('pct_ve','vs entrantes')+
+    S('ft','Total')+S('pct_ff','vs fluxo')+S('pct_fe','vs entrantes')+'</tr></thead>'+
+    '<tbody>'+corpo+'</tbody>'+
+    '<tfoot>'+rodape+'</tfoot></table>';
+  const ord=(estado.config.ordem||{}).vendedor||{campo:'',dir:''};
+  document.getElementById('selo-vendedor').textContent=
+    fmtNum(linhas.length)+' vendedor(es) · '+fmtNum(tot.ent)+' entrantes · '+fmtNum(tot.vd)+' vendas · '+
+    fmtNum(tot.ft)+' faturados'+(ord.campo?' · ordenada por '+ord.campo+' '+ord.dir:'');
+  alvo.querySelectorAll('th.ordenavel').forEach(th=>{
+    th.addEventListener('click',()=>trocarOrdem('vendedor',th.dataset.ordem,desenharRelatorioVendedor));
+  });
+}
+function copiarRelVendedor(){
+  const linhas=_linhasVendedor();
+  const cab=['Vendedor','Loja','Dep','Entrantes','Agendados','% Ag','Fluxo','% Fluxo',
+    'Venda','% V/Fluxo','% V/Ent.','Faturados','% F/Fluxo','% F/Ent.'];
+  const l=[cab];
+  const tot={ent:0,ag:0,fl:0,vd:0,ft:0};
+  linhas.forEach(r=>{
+    l.push([r.nome,r.loja,r.dep==='vn'?'VN':'VDA',r.ent,
+      r.ag,r.ent?fmtPct(pct(r.ag,r.ent)):'',
+      r.fl,r.ag?fmtPct(pct(r.fl,r.ag)):'',
+      r.vd,r.fl?fmtPct(pct(r.vd,r.fl)):'',r.ent?fmtPct(pct(r.vd,r.ent)):'',
+      r.ft,r.fl?fmtPct(pct(r.ft,r.fl)):'',r.ent?fmtPct(pct(r.ft,r.ent)):'']);
+    ['ent','ag','fl','vd','ft'].forEach(k=>tot[k]+=r[k]);
+  });
+  l.push(['TOTAL','','',tot.ent,
+    tot.ag,tot.ent?fmtPct(pct(tot.ag,tot.ent)):'',tot.fl,tot.ag?fmtPct(pct(tot.fl,tot.ag)):'',
+    tot.vd,tot.fl?fmtPct(pct(tot.vd,tot.fl)):'',tot.ent?fmtPct(pct(tot.vd,tot.ent)):'',
+    tot.ft,tot.fl?fmtPct(pct(tot.ft,tot.fl)):'',tot.ent?fmtPct(pct(tot.ft,tot.ent)):'']);
+  navigator.clipboard.writeText(l.map(r=>r.join('\t')).join('\n'))
+    .then(()=>recado('recado-vendedor','Copiado'))
+    .catch(()=>recado('recado-vendedor','Não deu para copiar','var(--alerta)'));
+}
+
+function atualizar(){
+  if(slideAtual) setTimeout(()=>gerarSlide(slideAtual),0);
+  desenharFiltro(); desenharPlacar(); desenharGeral(); desenharLojas(); desenharManual();
+  desenharRelatorioLoja(); desenharRelatorioVendedor();
+  desenharCobertura(); desenharHistorico(); desenharMapaMidias(); marcarEstado();
+}
+
+/* ============ ligações ============ */
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{
+  const trava=ABAS_TRAVADAS[b.dataset.aba];
+  if(trava && !liberar(trava)) return;
+  document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('.painel').forEach(p=>p.hidden=p.id!=='aba-'+b.dataset.aba);
+}));
+document.getElementById('sel-loja-manual').addEventListener('change',e=>{ lojaManual=e.target.value; desenharManual(); });
+document.getElementById('btn-zerar-manual').addEventListener('click',async()=>{
+  if(!confirm('Zerar as vendas de VN e VDA de todos os canais em '+lojaManual+'?')) return;
+  DEPS.forEach(d=>{ CANAIS.forEach(m=>{ estado.dados[lojaManual][d.k][m].vd=0; });
+    estado.manualVd[lojaManual+'|'+d.k]=true; });
+  await salvarTudo(); atualizar(); recado('recado-manual','Zerado');
+});
+document.getElementById('btn-soltar-manual').addEventListener('click',async()=>{
+  if(!confirm('Liberar '+lojaManual+' para que a próxima importação volte a trazer as vendas da planilha?')) return;
+  DEPS.forEach(d=>{ delete estado.manualVd[lojaManual+'|'+d.k]; });
+  await salvarTudo(); atualizar(); recado('recado-manual','Liberado');
+});
+document.querySelectorAll('#bloco-geral [data-slide]').forEach(b=>b.addEventListener('click',()=>gerarSlide(b.dataset.slide)));
+document.querySelectorAll('#bloco-geral [data-copiar]').forEach(b=>b.addEventListener('click',()=>copiarTabela(b.dataset.copiar)));
+document.getElementById('sel-tamanho').addEventListener('change',async e=>{
+  estado.config.tamanhoSlide=e.target.value; await guardar('config',estado.config);
+  if(slideAtual) gerarSlide(slideAtual);
+});
+document.getElementById('btn-copiar-slide').addEventListener('click',copiarSlide);
+document.getElementById('btn-baixar-slide').addEventListener('click',async()=>{
+  const cv=document.getElementById('tela-slide');
+  baixarBlob(await new Promise(r=>cv.toBlob(r,'image/png')),nomeArquivoSlide());
+});
+document.getElementById('btn-fechar-slide').addEventListener('click',()=>{
+  document.getElementById('bloco-slide').hidden=true; slideAtual=null;
+});
+document.querySelectorAll('.area-anexo[data-anexo]').forEach(area=>{
+  const fonte=area.dataset.anexo;
+  const inp=document.querySelector('input[data-arquivo="'+fonte+'"]');
+  area.addEventListener('click',()=>inp.click());
+  area.addEventListener('dragover',e=>{ e.preventDefault(); area.classList.add('sobre'); });
+  area.addEventListener('dragleave',()=>area.classList.remove('sobre'));
+  area.addEventListener('drop',async e=>{ e.preventDefault(); area.classList.remove('sobre');
+    if(e.dataTransfer.files.length){ await receberArquivos(e.dataTransfer.files,fonte);
+      if(registrarTipos()){ await guardar('config',estado.config); desenharMapaMidias(); desenharImportacao(); } } });
+  inp.addEventListener('change',async e=>{
+    if(e.target.files.length){ await receberArquivos(e.target.files,fonte);
+      if(registrarTipos()){ await guardar('config',estado.config); desenharMapaMidias(); desenharImportacao(); } }
+    e.target.value='';
+  });
+});
+document.getElementById('btn-mapa-padrao').addEventListener('click',async()=>{
+  if(!confirm('Voltar o mapa de mídias ao padrão? Os tipos que você classificou à mão voltam ao original.')) return;
+  const i=mapaInicial();
+  estado.config.mapaMidia=i.mapa; estado.config.rotulosMidia=i.rotulos;
+  if(bruto) registrarTipos();
+  await salvarTudo(); atualizar(); recado('recado-mapa','Mapa padrão');
+});
+document.getElementById('rotulo-mes').addEventListener('change',async e=>{
+  estado.config.rotuloMes=e.target.value.trim()||'Renault';
+  await salvarTudo(); marcarCarimbo();
+});
+document.getElementById('sel-vazias').addEventListener('change',async e=>{
+  estado.config.mostrarVazias=e.target.value==='1';
+  await salvarTudo(); atualizar();
+});
+document.getElementById('btn-backup').addEventListener('click',()=>{
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  baixar('backup-midia-eurovia-'+d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+'.json',
+    JSON.stringify({versao:4,painel:'midia-renault',gerado:new Date().toISOString(),
+      config:estado.config,dados:estado.dados,vendedores:estado.vendedores||{},
+      manualVd:estado.manualVd,fontes:estado.fontes,historico},null,1),'application/json');
+});
+document.getElementById('btn-restaurar').addEventListener('click',()=>document.getElementById('arquivo-backup').click());
+document.getElementById('arquivo-backup').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const fr=new FileReader();
+  fr.onload=async()=>{
+    try{
+      const o=JSON.parse(fr.result);
+      if(!o||!o.dados) throw new Error('formato');
+      estado.config=Object.assign({},PADRAO.config,o.config||{});
+      delete estado.config.destinoVendedor;
+  /* o descarte por motivo saiu do painel: limpa o que ficou gravado */
+  delete estado.config.filtros; delete estado.config.motivosFora;
+  if(!estado.config.filtroVendedor) estado.config.filtroVendedor={dep:'',praca:'',loja:''};
+  if(!estado.config.ordem) estado.config.ordem=JSON.parse(JSON.stringify(ORDEM_PADRAO));
+  ['lojaVN','lojaVD','vendedor','canais'].forEach(k=>{
+    if(!estado.config.ordem[k]) estado.config.ordem[k]={campo:'',dir:''};
+  });
+      estado.dados=normalizar(o.dados);
+      estado.vendedores=(o.vendedores&&typeof o.vendedores==='object')?o.vendedores:{};
+      estado.fontes=o.fontes||{};
+      estado.manualVd=(o.manualVd&&typeof o.manualVd==='object')?o.manualVd:{};
+      historico=Array.isArray(o.historico)?o.historico:[];
+      await salvarTudo(true);
+      atualizadoEm=o.gerado||new Date().toISOString(); await guardar('atualizado',atualizadoEm);
+      montarAjustes(); atualizar(); recado('recado-dados','Backup restaurado');
+    }catch(err){ alert('Esse arquivo precisa ser um backup gerado por este painel de mídia.'); }
+  };
+  fr.readAsText(f); e.target.value='';
+});
+document.getElementById('btn-exportar').addEventListener('click',()=>{
+  const l=['loja;praca;canal;entrantes_vn;entrantes_vda;agendados_vn;agendados_vda;fluxo_vn;fluxo_vda;vendas_vn;vendas_vda;pct_conv'];
+  NOMES.forEach(n=>{
+    if(!temDado([n])) return;
+    CANAIS.forEach(m=>{
+      const c=celula([n],[m]);
+      if(!(c.total.ent||c.total.ag||c.total.fl||c.total.vd)) return;
+      l.push([n,pracaDe(n),m,c.vn.ent,c.vd.ent,c.vn.ag,c.vd.ag,c.vn.fl,c.vd.fl,c.vn.vd,c.vd.vd,
+        c.temEnt?fmtPct(c.conv):''].join(';'));
+    });
+  });
+  const g=celula(lojasComDado(),CANAIS);
+  l.push(['TOTAL GERAL','GRUPO','TODOS',g.vn.ent,g.vd.ent,g.vn.ag,g.vd.ag,g.vn.fl,g.vd.fl,g.vn.vd,g.vd.vd,fmtPct(g.conv)].join(';'));
+  baixar('leads-por-midia-eurovia.csv','\ufeff'+l.join('\n'),'text/csv;charset=utf-8');
+});
+document.getElementById('btn-zerar').addEventListener('click',async()=>{
+  if(!liberar('para apagar tudo')) return;
+  if(!confirm('Isso apaga os números, as fontes e o histórico. O mapa de mídias é mantido. Continuar?')) return;
+  estado.dados=vazio(); estado.vendedores={}; estado.fontes={}; historico=[]; bruto=null;
+  await salvarTudo(); montarAjustes(); atualizar(); desenharImportacao();
+  recado('recado-dados','Apagado');
+});
+
+/* ============ ligações Relatório por loja / vendedor ============ */
+document.getElementById('btn-copiar-loja-vn').addEventListener('click',()=>copiarRelLoja('vn'));
+document.getElementById('btn-copiar-loja-vd').addEventListener('click',()=>copiarRelLoja('vd'));
+document.getElementById('btn-slide-loja-vn').addEventListener('click',()=>gerarSlide('funil-vn'));
+document.getElementById('btn-slide-loja-vd').addEventListener('click',()=>gerarSlide('funil-vd'));
+document.getElementById('btn-ordem-padrao-loja-vn').addEventListener('click',
+  ()=>resetarOrdem('lojaVN',desenharRelatorioLoja));
+document.getElementById('btn-ordem-padrao-loja-vd').addEventListener('click',
+  ()=>resetarOrdem('lojaVD',desenharRelatorioLoja));
+document.getElementById('btn-ordem-padrao-vendedor').addEventListener('click',
+  ()=>resetarOrdem('vendedor',desenharRelatorioVendedor));
+document.getElementById('btn-ordem-padrao-canais').addEventListener('click',
+  ()=>resetarOrdem('canais',()=>{ desenharGeral(); desenharLojas(); }));
+
+/* ============ ligações Relatório por vendedor ============ */
+async function _mudouFiltroVendedor(){
+  const f=estado.config.filtroVendedor||{dep:'',praca:'',loja:''};
+  f.dep=document.getElementById('filtro-vendedor-dep').value||'';
+  f.praca=document.getElementById('filtro-vendedor-praca').value||'';
+  f.loja=document.getElementById('filtro-vendedor-loja').value||'';
+  estado.config.filtroVendedor=f;
+  await guardar('config',estado.config);
+  desenharRelatorioVendedor();
+}
+document.getElementById('filtro-vendedor-dep').addEventListener('change',_mudouFiltroVendedor);
+document.getElementById('filtro-vendedor-praca').addEventListener('change',async e=>{
+  /* ao trocar praça, zera loja para evitar combinações inválidas */
+  estado.config.filtroVendedor=estado.config.filtroVendedor||{};
+  estado.config.filtroVendedor.praca=e.target.value||'';
+  estado.config.filtroVendedor.loja='';
+  await guardar('config',estado.config);
+  desenharRelatorioVendedor();
+});
+document.getElementById('filtro-vendedor-loja').addEventListener('change',_mudouFiltroVendedor);
+document.getElementById('btn-limpar-filtro-vendedor').addEventListener('click',async()=>{
+  estado.config.filtroVendedor={dep:'',praca:'',loja:''};
+  await guardar('config',estado.config);
+  desenharRelatorioVendedor();
+});
+document.getElementById('btn-copiar-vendedor').addEventListener('click',copiarRelVendedor);
+
+/* ============ ligações Google Sheets e Drive ============ */
+document.getElementById('btn-ler-google').addEventListener('click',lerVendasGoogle);
+document.getElementById('btn-abrir-google').addEventListener('click',()=>{
+  const l=(document.getElementById('link-vendas').value||estado.config.linkVendas||'').trim();
+  if(l) window.open(l,'_blank'); else recado('recado-google','Cole o link primeiro','var(--alerta)');
+});
+document.getElementById('link-vendas').addEventListener('change',async e=>{
+  estado.config.linkVendas=e.target.value.trim(); await guardar('config',estado.config);
+});
+document.getElementById('aba-google').addEventListener('change',async e=>{
+  estado.config.abaVendas=e.target.value.trim(); await guardar('config',estado.config);
+});
+document.getElementById('btn-subir-drive').addEventListener('click',subirDrive);
+document.getElementById('btn-baixar-drive').addEventListener('click',()=>baixarDrive(false));
+document.getElementById('btn-testar-drive').addEventListener('click',testarDrive);
+document.getElementById('url-drive').addEventListener('change',async e=>{
+  estado.config.urlDrive=e.target.value.trim(); await guardar('config',estado.config);
+});
+document.getElementById('auto-drive').addEventListener('change',async e=>{
+  estado.config.autoDrive=e.target.value==='1'; await guardar('config',estado.config);
+});
+
+function montarAjustes(){
+  document.getElementById('rotulo-mes').value=estado.config.rotuloMes||'';
+  document.getElementById('sel-tamanho').value=estado.config.tamanhoSlide||'pequeno';
+  document.getElementById('sel-vazias').value=estado.config.mostrarVazias?'1':'0';
+  document.getElementById('link-vendas').value=estado.config.linkVendas||'';
+  document.getElementById('aba-google').value=estado.config.abaVendas||'';
+  document.getElementById('url-drive').value=estado.config.urlDrive||'';
+  document.getElementById('auto-drive').value=estado.config.autoDrive?'1':'0';
+  if(estado.config.linkVendas) selo('google','link salvo · '+(estado.config.abaVendas||'sem aba'));
+  if(estado.config.urlDrive) selo('drive',estado.config.driveEm?('último envio '+dataBR(estado.config.driveEm)):'app configurado');
+}
+
+(async function inicio(){
+  marcarTrava();
+  await carregarTudo();
+  await salvarTudo(true);
+  montarAjustes();
+  atualizar();
+  if(estado.config.autoDrive && (estado.config.urlDrive||'').trim()){
+    baixarDrive(true).then(()=>{ montarAjustes(); atualizar(); });
+  }
+})();
+</script>
+</body>
+</html>
