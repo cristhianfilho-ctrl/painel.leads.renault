@@ -935,7 +935,7 @@ function colunasDe(cabecalhos){
     return -1;
   };
   return {loja:achar(['empresa','loja']), midia:achar(['midia']),
-    vendedor:achar(['vendedor']), motivo:achar(['motivoconclusao'])};
+    vendedor:achar(['vendedor']), motivo:achar(['motivoconclusao']), tipoEvento:achar(['tipoevento'])};
 }
 async function receberArquivos(lista,fonte){
   const alvo=document.getElementById('mapa-midia');
@@ -961,8 +961,9 @@ async function receberArquivos(lista,fonte){
     desenharImportacao();
   }catch(e){ erro('Falha ao processar: '+e.message); }
 }
-/* NOVOS WEB - DS: reconhece variações de escrita (hífen, espaço, caixa, prefixo/sufixo) */
-const ehNovosWebDS=cru=>{ const k=chave(cru); return k.indexOf('novoswebds')>=0||k.indexOf('novowebds')>=0; };
+/* NOVOS WEB - DS fica na coluna Tipo Evento (coluna E) do relatório. Compara o valor inteiro
+   da célula: 'NOVOS WEB' e 'NOVOS WEB - MOVE BRASIL' não são DS. */
+const ehNovosWebDS=cru=>{ const k=chave(cru); return k==='novoswebds'||k==='novowebds'; };
 /* conta as linhas por loja, canal e departamento */
 function processarItem(it){
   const cfg=fonteDe(it.fonte);
@@ -986,10 +987,11 @@ function processarItem(it){
     const q=departamento(l[it.colunas.vendedor]);
     const temPrefixo=!!q.dep;
     let dep=q.dep;
-    /* NOVOS WEB - DS no relatório de entrantes: NÃO conta como entrante, mas conta em
-       encaminhados (quando o vendedor tem prefixo), separado por VN/VDA e por vendedor.
+    /* NOVOS WEB - DS (coluna Tipo Evento) no relatório de entrantes: NÃO conta como entrante,
+       mas conta em encaminhados (vendedor com prefixo), separado por VN/VDA e por vendedor.
        Sem vendedor com prefixo, a linha fica fora. Agendados e fluxo seguem a regra normal. */
-    if(it.fonte==='ent' && ehNovosWebDS(cru)){
+    const tipoEv = it.colunas.tipoEvento>=0 ? l[it.colunas.tipoEvento] : cru;
+    if(it.fonte==='ent' && ehNovosWebDS(tipoEv)){
       if(!dep){
         if(semVendedor(q)){ excluidosEntDS++; continue; }
         pendentes[q.rot]=(pendentes[q.rot]||0)+1; semDep++; continue;
@@ -1057,7 +1059,7 @@ function desenharImportacao(){
        (r.semLoja?' + '+fmtNum(r.semLoja)+' sem loja':'')+
        (r.excluidosEntDS?' + '+fmtNum(r.excluidosEntDS)+' NOVOS WEB - DS fora dos entrantes':'')+
        (r.semVendVN?'<br><b>'+fmtNum(r.semVendVN)+'</b> linha(s) sem vendedor entraram em <b>VN</b>, como combinado para os entrantes.':'')+
-       (r.excluidosEntDS?'<br><b>'+fmtNum(r.excluidosEntDS)+'</b> linha(s) de <b>NOVOS WEB - DS</b> não entram nos entrantes; <b>'+fmtNum(r.dsEnc)+'</b> delas contam só em <b>Encaminhados</b> (as sem vendedor ficam fora). Em agendados e fluxo contam normalmente.':'')+
+       (r.excluidosEntDS?'<br><b>'+fmtNum(r.excluidosEntDS)+'</b> linha(s) com Tipo Evento <b>NOVOS WEB - DS</b> não entram nos entrantes; <b>'+fmtNum(r.dsEnc)+'</b> delas contam só em <b>Encaminhados</b> (as sem vendedor ficam fora). Em agendados e fluxo contam normalmente.':'')+
        '<br><b>Lojas no arquivo:</b> '+(r.lojas.length?r.lojas.join(' · '):'nenhuma')+
        (function(){
          const zeradas=alvosDoArquivo(r.lojas).filter(n=>r.lojas.indexOf(n)<0);
@@ -1074,7 +1076,7 @@ function desenharImportacao(){
     g+='<div class="rolagem" style="margin-top:12px"><table><thead><tr><th>Canal</th><th>VN</th><th>VDA</th><th>Total</th></tr></thead>'+
        '<tbody>'+corpo+'</tbody><tfoot><tr><th>Total do arquivo</th><td>'+fmtNum(tvn)+'</td><td>'+fmtNum(tvd)+'</td>'+
        '<td>'+fmtNum(tvn+tvd)+'</td></tr></tfoot></table></div>';
-    g+='<div class="caixa"><b>Tipos de mídia lidos:</b> '+Object.keys(r.tipos).map(t=>t+' ('+r.tipos[t]+')'+(it.fonte==='ent'&&ehNovosWebDS(t)?' <span class="ok">[DS: fora dos entrantes]</span>':'')).join(' · ')+'</div>';
+    g+='<div class="caixa"><b>Tipos de mídia lidos:</b> '+Object.keys(r.tipos).map(t=>t+' ('+r.tipos[t]+')').join(' · ')+'</div>';
     const pend=Object.keys(r.pendentes).sort((a,b)=>r.pendentes[b]-r.pendentes[a]);
     if(pend.length){
       g+='<div class="avisos"><h3>'+fmtNum(r.semDep)+' linha(s) sem departamento — ficam fora da conta</h3>'+
