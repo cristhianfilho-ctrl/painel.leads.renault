@@ -805,13 +805,17 @@ function desenharLojas(){
 function desenharPlacar(){
   const lojas=lojasAtivas();
   const c=celula(lojas,CANAIS);
+  /* faturados não fazem parte de celula(); soma direta nas mesmas lojas/departamentos */
+  let ft=0;
+  lojas.forEach(n=>DEPS.forEach(d=>CANAIS.forEach(m=>{ ft+=+((((estado.dados[n]||{})[d.k]||{})[m]||{}).ft)||0; })));
   document.getElementById('placar').innerHTML=
     '<div><span>Entrantes'+(lojaSel?' · '+lojaSel:(praca?' · '+praca:''))+'</span><strong>'+fmtNum(c.total.ent)+'</strong></div>'+
     '<div><span>Agendados</span><strong>'+fmtNum(c.total.ag)+'</strong></div>'+
     '<div><span>Fluxo</span><strong>'+fmtNum(c.total.fl)+'</strong></div>'+
     '<div><span>Vendas</span><strong class="destaque">'+fmtNum(c.total.vd)+'</strong></div>'+
-    '<div><span>VN / VDA</span><strong>'+fmtNum(c.vn.vd)+' / '+fmtNum(c.vd.vd)+'</strong></div>'+
-    '<div><span>%conv.</span><strong>'+fmtPct(c.conv)+'</strong></div>';
+    '<div><span>% conv. venda</span><strong>'+fmtPct(c.conv)+'</strong></div>'+
+    '<div><span>Faturados</span><strong>'+fmtNum(ft)+'</strong></div>'+
+    '<div><span>% conv. faturado</span><strong>'+fmtPct(pct(ft,c.total.ent))+'</strong></div>';
 }
 function desenharFiltro(){
   const el=document.getElementById('filtro'); if(!el) return;
