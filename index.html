@@ -85,6 +85,7 @@
   td.pct-alto{color:var(--ok)} td.pct-medio{color:var(--atencao)} td.pct-baixo{color:var(--alerta)}
   table.editavel input{width:88px;padding:4px 5px;text-align:center;font-size:12px}
   table input.editado{border-color:var(--amarelo);color:var(--amarelo)}
+  .sub-manual{font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;font-size:12.5px;color:var(--amarelo);margin:16px 0 8px}
   .legenda{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-family:var(--mono);font-size:11.5px;color:var(--apagado)}
   .legenda b{color:var(--texto);font-weight:600}
   .legenda .pct-alto{color:var(--ok)} .legenda .pct-medio{color:var(--atencao)} .legenda .pct-baixo{color:var(--alerta)}
@@ -287,7 +288,7 @@
 
   <section class="painel" id="aba-lancar" hidden>
     <div class="bloco">
-      <h2>Vendas lançadas à mão <span class="selo-estado" id="selo-manual">grava a cada campo alterado</span>
+      <h2>Lançar à mão <span class="selo-estado" id="selo-manual">grava a cada campo alterado</span>
         <span class="controles">
           <label for="sel-loja-manual">Loja</label>
           <select id="sel-loja-manual" style="width:auto"></select>
@@ -295,10 +296,10 @@
       </h2>
       <div class="miolo">
         <div class="rolagem" id="tabela-manual"></div>
-        <p class="dica" style="margin-top:10px">Os relatórios de mergulho alimentam entrantes, agendados e fluxo. A venda é digitada aqui, por canal e por departamento.</p>
+        <p class="dica" style="margin-top:10px">Edite qualquer número por canal e departamento: entrantes, encaminhados, agendados, fluxo, vendas e faturados. Campo alterado fica destacado e travado: as próximas importações não sobrescrevem até você usar <b>Voltar a usar os relatórios</b>. O <b>fluxo</b> digitado vale como total (comparecidos). O quadro por vendedor não é afetado.</p>
         <div class="barra">
-          <button class="acao" id="btn-zerar-manual">Zerar as vendas desta loja</button>
-          <button class="acao miudo" id="btn-soltar-manual">Voltar a usar a planilha</button>
+          <button class="acao" id="btn-zerar-manual">Zerar vendas e faturados desta loja</button>
+          <button class="acao miudo" id="btn-soltar-manual">Voltar a usar os relatórios</button>
           <span class="recado" id="recado-manual">Salvo</span>
         </div>
         <div class="caixa" id="caixa-manual"></div>
@@ -1124,9 +1125,11 @@ async function aplicar(){
     const cfg=fonteDe(it.fonte), r=processarItem(it);
     const alvos=alvosDoArquivo(r.lojas);
     alvos.forEach(n=>DEPS.forEach(d=>CANAIS.forEach(m=>{
-      estado.dados[n][d.k][m][it.fonte]=(((r.res[n]||{})[d.k]||{})[m])||0;
+      const campoTrava=(it.fonte==='cAg'||it.fonte==='cNao')?'fl':it.fonte;
+      if(!travaManual(n,d.k,campoTrava))
+        estado.dados[n][d.k][m][it.fonte]=(((r.res[n]||{})[d.k]||{})[m])||0;
       /* o relatório de entrantes também alimenta encaminhados (sem SEM VENDEDOR) */
-      if(it.fonte==='ent'){
+      if(it.fonte==='ent' && !travaManual(n,d.k,'enc')){
         estado.dados[n][d.k][m].enc=(((r.resEnc[n]||{})[d.k]||{})[m])||0;
       }
     })));
@@ -1344,10 +1347,9 @@ async function lerVendasGoogle(){
     /* aplica direto: sobrescreve vendas (vd) e faturados (ft) das lojas que apareceram,
        preservando lojas travadas por lançamento manual */
     r2.lojas.forEach(n=>DEPS.forEach(d=>CANAIS.forEach(m=>{
-      if((estado.manualVd||{})[n+'|'+d.k]) return;
       const c=((r2.res[n]||{})[d.k]||{})[m]||{vd:0,ft:0};
-      estado.dados[n][d.k][m].vd=c.vd||0;
-      estado.dados[n][d.k][m].ft=c.ft||0;
+      if(!travaManual(n,d.k,'vd')) estado.dados[n][d.k][m].vd=c.vd||0;
+      if(!travaManual(n,d.k,'ft')) estado.dados[n][d.k][m].ft=c.ft||0;
     })));
     /* vendedores: zera vd/ft dos vendedores das lojas que apareceram, depois aplica */
     estado.vendedores=estado.vendedores||{};
@@ -1509,7 +1511,19 @@ async function testarDrive(){
   }
 }
 
-/* ============ lançamento manual das vendas ============ */
+/* ============ lançamento manual ============ */
+/* Trava por loja|departamento|campo (ent, enc, ag, fl, vd, ft). O que foi digitado à mão não é
+   sobrescrito pelas importações até soltar a loja. Chave antiga 'LOJA|dep' continua valendo
+   para vendas e faturados. */
+const CAMPOS_MANUAIS=[['ent','Entrantes'],['enc','Encaminhados'],['ag','Agendados'],['fl','Fluxo'],['vd','Vendas'],['ft','Faturados']];
+function travaManual(n,dk,campo){
+  const m=estado.manualVd||{};
+  return !!(m[n+'|'+dk+'|'+campo] || ((campo==='vd'||campo==='ft') && m[n+'|'+dk]));
+}
+const valorCampo=(n,dk,m,campo)=>{
+  const r=(((estado.dados[n]||{})[dk]||{})[m])||{};
+  return campo==='fl' ? (+r.cAg||0)+(+r.cNao||0) : (+r[campo]||0);
+};
 let lojaManual=null;
 function desenharManual(){
   const sel=document.getElementById('sel-loja-manual');
@@ -1517,46 +1531,53 @@ function desenharManual(){
   sel.innerHTML=NOMES.map(n=>'<option value="'+n+'"'+(lojaManual===n?' selected':'')+'>'+
     n+(temDado([n])?'':' (sem relatório)')+'</option>').join('');
   const n=lojaManual;
-  let c='';
-  CANAIS.forEach(m=>{
-    const vn=+(((estado.dados[n]||{}).vn||{})[m]||{}).vd||0;
-    const vd=+(((estado.dados[n]||{}).vd||{})[m]||{}).vd||0;
-    const ent=celula([n],[m]).total.ent;
-    c+='<tr><th>'+m+'</th>'+
-      '<td><input type="number" min="0" step="1" data-dep="vn" data-canal="'+m+'" value="'+vn+'"></td>'+
-      '<td><input type="number" min="0" step="1" data-dep="vd" data-canal="'+m+'" value="'+vd+'"></td>'+
-      '<td class="forte">'+fmtNum(vn+vd)+'</td>'+
-      '<td class="'+(ent?'':'zero')+'">'+fmtNum(ent)+'</td>'+
-      '<td class="conv">'+(ent?fmtPct(pct(vn+vd,ent)):'—')+'</td></tr>';
+  let html='';
+  DEPS.forEach(d=>{
+    const tot={}; CAMPOS_MANUAIS.forEach(([k])=>tot[k]=0);
+    let corpo='';
+    CANAIS.forEach(m=>{
+      corpo+='<tr><th>'+m+'</th>'+CAMPOS_MANUAIS.map(([k])=>{
+        const v=valorCampo(n,d.k,m,k); tot[k]+=v;
+        return '<td><input type="number" min="0" step="1" data-dep="'+d.k+'" data-canal="'+m+'" data-campo="'+k+'" value="'+v+'"'+
+          (travaManual(n,d.k,k)?' class="editado"':'')+'></td>';
+      }).join('')+'</tr>';
+    });
+    html+='<h3 class="sub-manual">'+(d.k==='vn'?'Veículos novos · VN':'Venda direta · VDA')+'</h3>'+
+      '<table class="editavel"><thead><tr><th class="canal">Canal</th>'+
+      CAMPOS_MANUAIS.map(([k,r])=>'<th>'+r+'</th>').join('')+'</tr></thead><tbody>'+corpo+'</tbody>'+
+      '<tfoot><tr><th>Total</th>'+CAMPOS_MANUAIS.map(([k])=>'<td>'+fmtNum(tot[k])+'</td>').join('')+'</tr></tfoot></table>';
   });
   const g=celula([n],CANAIS);
-  document.getElementById('tabela-manual').innerHTML=
-    '<table class="editavel"><thead><tr><th class="canal">Canal</th><th>Venda VN</th><th>Venda VDA</th>'+
-    '<th>Total</th><th>Entrantes</th><th class="pctcol">%conv.</th></tr></thead>'+
-    '<tbody>'+c+'</tbody>'+
-    '<tfoot><tr><th>Total</th><td>'+fmtNum(g.vn.vd)+'</td><td>'+fmtNum(g.vd.vd)+'</td>'+
-    '<td>'+fmtNum(g.total.vd)+'</td><td>'+fmtNum(g.total.ent)+'</td><td>'+
-    (g.temEnt?fmtPct(g.conv):'—')+'</td></tr></tfoot></table>';
+  let ft=0; DEPS.forEach(d=>CANAIS.forEach(m=>{ ft+=valorCampo(n,d.k,m,'ft'); }));
+  html+='<div class="caixa" style="margin-top:12px"><b>'+n+' · VN + VDA:</b> '+fmtNum(g.total.ent)+' entrantes · '+
+    fmtNum(g.total.enc)+' encaminhados · '+fmtNum(g.total.ag)+' agendados · '+fmtNum(g.total.fl)+' fluxo · '+
+    fmtNum(g.total.vd)+' vendas ('+(g.temEnt?fmtPct(g.conv):'—')+') · '+fmtNum(ft)+' faturados ('+
+    (g.temEnt?fmtPct(pct(ft,g.total.ent)):'—')+')</div>';
+  document.getElementById('tabela-manual').innerHTML=html;
   document.querySelectorAll('#tabela-manual input').forEach(inp=>{
     inp.addEventListener('change',async()=>{
       const v=Math.max(0,Math.round(+inp.value||0));
       inp.value=v;
-      estado.dados[lojaManual][inp.dataset.dep][inp.dataset.canal].vd=v;
+      const dk=inp.dataset.dep, m=inp.dataset.canal, campo=inp.dataset.campo;
+      const cel=estado.dados[lojaManual][dk][m];
+      if(campo==='fl'){ cel.cAg=v; cel.cNao=0; }   /* fluxo é a soma de comparecidos; o total digitado vai em cAg */
+      else cel[campo]=v;
       estado.manualVd=estado.manualVd||{};
-      estado.manualVd[lojaManual+'|'+inp.dataset.dep]=true;
+      estado.manualVd[lojaManual+'|'+dk+'|'+campo]=true;
       inp.classList.add('editado');
       await salvarTudo();
       atualizar();
       recado('recado-manual','Salvo');
     });
   });
-  const marcas=DEPS.filter(d=>(estado.manualVd||{})[lojaManual+'|'+d.k]).map(d=>d.rot);
+  const marcas=[];
+  DEPS.forEach(d=>CAMPOS_MANUAIS.forEach(([k,r])=>{ if(travaManual(n,d.k,k)) marcas.push(d.rot+' '+r.toLowerCase()); }));
   document.getElementById('caixa-manual').innerHTML = marcas.length
-    ? '<span class="ok">Vendas de <b>'+marcas.join(' e ')+'</b> em '+lojaManual+' já foram lançadas à mão.</span> '+
-      'Os relatórios de mergulho cuidam de entrantes, agendados e fluxo, e não mexem nestas vendas.'
-    : 'Nada lançado à mão em '+lojaManual+'. Os relatórios não trazem venda por mídia, então ela é digitada aqui.';
+    ? '<span class="ok">Campos de '+lojaManual+' lançados à mão (as importações não mexem neles): <b>'+marcas.join(' · ')+'</b>.</span> '+
+      'Use <b>Voltar a usar os relatórios</b> para liberar a loja.'
+    : 'Nada lançado à mão em '+lojaManual+'. Os campos mostram o que veio dos relatórios e da planilha; edite qualquer um e ele fica travado.';
   document.getElementById('selo-manual').textContent=
-    Object.keys(estado.manualVd||{}).length+' combinação(ões) no manual';
+    Object.keys(estado.manualVd||{}).length+' travas no manual';
 }
 
 /* ============ mapa de mídias ============ */
@@ -2353,14 +2374,14 @@ document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()
 }));
 document.getElementById('sel-loja-manual').addEventListener('change',e=>{ lojaManual=e.target.value; desenharManual(); });
 document.getElementById('btn-zerar-manual').addEventListener('click',async()=>{
-  if(!confirm('Zerar as vendas de VN e VDA de todos os canais em '+lojaManual+'?')) return;
-  DEPS.forEach(d=>{ CANAIS.forEach(m=>{ estado.dados[lojaManual][d.k][m].vd=0; });
-    estado.manualVd[lojaManual+'|'+d.k]=true; });
+  if(!confirm('Zerar vendas e faturados de VN e VDA de todos os canais em '+lojaManual+'?')) return;
+  DEPS.forEach(d=>{ CANAIS.forEach(m=>{ estado.dados[lojaManual][d.k][m].vd=0; estado.dados[lojaManual][d.k][m].ft=0; });
+    estado.manualVd[lojaManual+'|'+d.k+'|vd']=true; estado.manualVd[lojaManual+'|'+d.k+'|ft']=true; });
   await salvarTudo(); atualizar(); recado('recado-manual','Zerado');
 });
 document.getElementById('btn-soltar-manual').addEventListener('click',async()=>{
-  if(!confirm('Liberar '+lojaManual+' para que a próxima importação volte a trazer as vendas da planilha?')) return;
-  DEPS.forEach(d=>{ delete estado.manualVd[lojaManual+'|'+d.k]; });
+  if(!confirm('Liberar '+lojaManual+' para que a próxima importação volte a trazer todos os campos dos relatórios e da planilha?')) return;
+  Object.keys(estado.manualVd||{}).forEach(k=>{ if(k.indexOf(lojaManual+'|')===0) delete estado.manualVd[k]; });
   await salvarTudo(); atualizar(); recado('recado-manual','Liberado');
 });
 document.querySelectorAll('#bloco-geral [data-slide]').forEach(b=>b.addEventListener('click',()=>gerarSlide(b.dataset.slide)));
