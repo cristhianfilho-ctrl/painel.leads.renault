@@ -961,6 +961,8 @@ async function receberArquivos(lista,fonte){
     desenharImportacao();
   }catch(e){ erro('Falha ao processar: '+e.message); }
 }
+/* NOVOS WEB - DS: reconhece variações de escrita (hífen, espaço, caixa, prefixo/sufixo) */
+const ehNovosWebDS=cru=>{ const k=chave(cru); return k.indexOf('novoswebds')>=0||k.indexOf('novowebds')>=0; };
 /* conta as linhas por loja, canal e departamento */
 function processarItem(it){
   const cfg=fonteDe(it.fonte);
@@ -987,7 +989,7 @@ function processarItem(it){
     /* NOVOS WEB - DS no relatório de entrantes: NÃO conta como entrante, mas conta em
        encaminhados (quando o vendedor tem prefixo), separado por VN/VDA e por vendedor.
        Sem vendedor com prefixo, a linha fica fora. Agendados e fluxo seguem a regra normal. */
-    if(it.fonte==='ent' && chave(cru)==='novoswebds'){
+    if(it.fonte==='ent' && ehNovosWebDS(cru)){
       if(!dep){
         if(semVendedor(q)){ excluidosEntDS++; continue; }
         pendentes[q.rot]=(pendentes[q.rot]||0)+1; semDep++; continue;
@@ -1072,7 +1074,7 @@ function desenharImportacao(){
     g+='<div class="rolagem" style="margin-top:12px"><table><thead><tr><th>Canal</th><th>VN</th><th>VDA</th><th>Total</th></tr></thead>'+
        '<tbody>'+corpo+'</tbody><tfoot><tr><th>Total do arquivo</th><td>'+fmtNum(tvn)+'</td><td>'+fmtNum(tvd)+'</td>'+
        '<td>'+fmtNum(tvn+tvd)+'</td></tr></tfoot></table></div>';
-    g+='<div class="caixa"><b>Tipos de mídia lidos:</b> '+Object.keys(r.tipos).map(t=>t+' ('+r.tipos[t]+')').join(' · ')+'</div>';
+    g+='<div class="caixa"><b>Tipos de mídia lidos:</b> '+Object.keys(r.tipos).map(t=>t+' ('+r.tipos[t]+')'+(it.fonte==='ent'&&ehNovosWebDS(t)?' <span class="ok">[DS: fora dos entrantes]</span>':'')).join(' · ')+'</div>';
     const pend=Object.keys(r.pendentes).sort((a,b)=>r.pendentes[b]-r.pendentes[a]);
     if(pend.length){
       g+='<div class="avisos"><h3>'+fmtNum(r.semDep)+' linha(s) sem departamento — ficam fora da conta</h3>'+
